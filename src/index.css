@@ -1,0 +1,80 @@
+@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:ital,wght@0,300;0,400;0,500;0,600;0,700;0,800;1,400&family=Outfit:wght@300;400;500;600;700;800;900&family=Cinzel:wght@400;500;600;700;800&display=swap');
+@import "tailwindcss";
+
+@theme {
+  --font-sans: "Plus Jakarta Sans", ui-sans-serif, system-ui, sans-serif;
+  --font-display: "Outfit", sans-serif;
+  --font-luxury: "Cinzel", serif;
+}
+
+/* Custom glowing effects for ultra-premium UX */
+.gold-glow {
+  box-shadow: 0 0 30px rgba(212, 175, 55, 0.15);
+}
+
+.gold-glow-button {
+  box-shadow: 0 4px 20px rgba(242, 125, 38, 0.25);
+  transition: all 0.3s ease;
+}
+
+.gold-glow-button:hover {
+  box-shadow: 0 10px 40px rgba(242, 125, 38, 0.45);
+  transform: translateY(-2px);
+}
+
+.gold-text-gradient {
+  background: linear-gradient(135deg, #D4AF37 0%, #F27D26 50%, #D4AF37 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+.gold-border-gradient {
+  border-image: linear-gradient(to right, #D4AF37, #F27D26, #D4AF37) 1;
+}
+
+/* Custom scroll behavior */
+html {
+  scroll-behavior: smooth;
+  background-color: #050505;
+}
+
+/* Animated background nodes for a sophisticated high-end atmosphere */
+@keyframes ambient-pulse {
+  0%, 100% {
+    transform: scale(1) translate(0px, 0px);
+    opacity: 0.12;
+  }
+  33% {
+    transform: scale(1.15) translate(40px, -60px);
+    opacity: 0.18;
+  }
+  66% {
+    transform: scale(0.9) translate(-30px, 30px);
+    opacity: 0.08;
+  }
+}
+
+@keyframes shimmer {
+  0% {
+    left: -150%;
+  }
+  50% {
+    left: 150%;
+  }
+  100% {
+    left: 150%;
+  }
+}
+
+.shimmer-effect {
+  animation: shimmer 3s infinite;
+}
+
+.ambient-glow-orange {
+  animation: ambient-pulse 18s infinite ease-in-out;
+}
+
+.ambient-glow-blue {
+  animation: ambient-pulse 24s infinite ease-in-out 3s;
+}
+

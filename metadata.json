@@ -1,0 +1,8 @@
+{
+  "name": "Remix: Remix: MZ+",
+  "description": "La landing page officielle premium de MZ+ conçue pour maximiser l\u0027engagement vidéo et les inscriptions.",
+  "requestFramePermissions": [],
+  "majorCapabilities": [
+    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
+  ]
+}
