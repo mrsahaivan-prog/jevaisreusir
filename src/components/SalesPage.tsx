@@ -19,7 +19,8 @@ import {
   Rocket,
   Gift,
   Target,
-  Heart
+  Heart,
+  Clock
 } from "lucide-react";
 
 interface Country {
@@ -259,6 +260,42 @@ export const SalesPage: React.FC<SalesPageProps> = ({
   const [showCountrySelector, setShowCountrySelector] = useState<boolean>(false);
   const [activeFaq, setActiveFaq] = useState<number | null>(null);
 
+  const [timeLeft, setTimeLeft] = useState<{
+    days: number;
+    hours: number;
+    minutes: number;
+    seconds: number;
+    isExpired: boolean;
+  }>({ days: 0, hours: 0, minutes: 0, seconds: 0, isExpired: false });
+
+  useEffect(() => {
+    const calculateTimeLeft = () => {
+      // Expiration Sunday, July 12, 2026, at 23:00 (11:00 PM)
+      const targetDate = new Date("2026-07-12T23:00:00");
+      const difference = +targetDate - +new Date();
+      
+      if (difference <= 0) {
+        return { days: 0, hours: 0, minutes: 0, seconds: 0, isExpired: true };
+      }
+
+      return {
+        days: Math.floor(difference / (1000 * 60 * 60 * 24)),
+        hours: Math.floor((difference / (1000 * 60 * 60)) % 24),
+        minutes: Math.floor((difference / 1000 / 60) % 60),
+        seconds: Math.floor((difference / 1000) % 60),
+        isExpired: false
+      };
+    };
+
+    setTimeLeft(calculateTimeLeft());
+
+    const timer = setInterval(() => {
+      setTimeLeft(calculateTimeLeft());
+    }, 1000);
+
+    return () => clearInterval(timer);
+  }, []);
+
   const priceInfo = getPriceForCountry(selectedCountry.code);
 
   const benefits = [
@@ -438,6 +475,31 @@ export const SalesPage: React.FC<SalesPageProps> = ({
                 </motion.div>
               ))}
             </div>
+
+            {/* Elegant Animated Scroll Indicator right under benefits card */}
+            <motion.div 
+              initial={{ opacity: 0, y: -5 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.6, duration: 0.5 }}
+              className="mt-6 flex flex-col items-center justify-center gap-1.5 cursor-pointer pb-1"
+              onClick={() => {
+                const ctaEl = document.getElementById("btn_sales_page_mid_cta");
+                if (ctaEl) {
+                  ctaEl.scrollIntoView({ behavior: "smooth", block: "center" });
+                }
+              }}
+            >
+              <span className="text-[10px] sm:text-xs font-black uppercase tracking-widest text-gray-400 hover:text-amber-400 transition-colors flex items-center gap-1">
+                Défile vers le bas pour réserver ton accès exclusif 👇
+              </span>
+              <motion.div
+                animate={{ y: [0, 6, 0] }}
+                transition={{ repeat: Infinity, duration: 1.5, ease: "easeInOut" }}
+                className="w-5 h-8 border border-white/20 rounded-full flex justify-center p-1"
+              >
+                <div className="w-1.5 h-1.5 bg-gradient-to-b from-yellow-400 to-orange-500 rounded-full" />
+              </motion.div>
+            </motion.div>
           </motion.div>
         </section>
 
@@ -613,6 +675,8 @@ export const SalesPage: React.FC<SalesPageProps> = ({
           </div>
         </section>
 
+
+
         {/* High-Converting CTA Box in place of old country detection */}
         <section className="mb-10 max-w-xl mx-auto">
           <motion.div
@@ -628,9 +692,37 @@ export const SalesPage: React.FC<SalesPageProps> = ({
             <h3 className="text-lg sm:text-xl font-black text-white font-display mb-2 uppercase tracking-wide">
               🌟 RÉSERVE TA PLACE DANS LE SYSTÈME 🌟
             </h3>
-            
-            <p className="text-xs text-gray-400 max-w-sm mx-auto mb-5">
-              Accédez instantanément au club privé, aux formations complètes, aux outils automatisés et à l'accompagnement VIP.
+
+            {/* High-Converting Countdown Timer Grid directly integrated in CTA Box */}
+            <div className="grid grid-cols-4 gap-2 max-w-xs mx-auto mb-4 mt-2">
+              <div className="bg-black/50 border border-white/10 rounded-xl py-2 px-1 text-center">
+                <span className="block text-base sm:text-lg font-black font-display text-white leading-none">
+                  {timeLeft.isExpired ? "0" : timeLeft.days}
+                </span>
+                <span className="text-[7px] uppercase tracking-widest text-gray-500 font-extrabold">Jours</span>
+              </div>
+              <div className="bg-black/50 border border-white/10 rounded-xl py-2 px-1 text-center">
+                <span className="block text-base sm:text-lg font-black font-display text-amber-400 leading-none">
+                  {timeLeft.isExpired ? "00" : String(timeLeft.hours).padStart(2, "0")}
+                </span>
+                <span className="text-[7px] uppercase tracking-widest text-gray-500 font-extrabold">Heures</span>
+              </div>
+              <div className="bg-black/50 border border-white/10 rounded-xl py-2 px-1 text-center">
+                <span className="block text-base sm:text-lg font-black font-display text-amber-400 leading-none">
+                  {timeLeft.isExpired ? "00" : String(timeLeft.minutes).padStart(2, "0")}
+                </span>
+                <span className="text-[7px] uppercase tracking-widest text-gray-500 font-extrabold">Min</span>
+              </div>
+              <div className="bg-black/50 border border-white/10 rounded-xl py-2 px-1 text-center">
+                <span className="block text-base sm:text-lg font-black font-display text-orange-500 leading-none animate-pulse">
+                  {timeLeft.isExpired ? "00" : String(timeLeft.seconds).padStart(2, "0")}
+                </span>
+                <span className="text-[7px] uppercase tracking-widest text-gray-500 font-extrabold">Sec</span>
+              </div>
+            </div>
+
+            <p className="text-xs text-gray-400 max-w-sm mx-auto mb-5 leading-relaxed">
+              Accédez instantanément au club privé, aux formations complètes, aux outils automatisés et à l'accompagnement VIP avant l'expiration définitive dimanche à 23h !
             </p>
 
             <div className="bg-white/[0.02] border border-white/5 rounded-2xl p-4 mb-6 max-w-xs mx-auto">
@@ -788,7 +880,10 @@ export const SalesPage: React.FC<SalesPageProps> = ({
           {/* Subtle ultra-emotional count down text */}
           <div className="text-[10px] font-black text-orange-400 flex items-center gap-1 mb-2 bg-orange-500/10 py-1 px-3.5 rounded-full border border-orange-500/20 animate-pulse">
             <span className="w-2 h-2 rounded-full bg-orange-500 animate-ping" />
-            ⚠️ ATTENTION : Seulement quelques places disponibles à ce tarif ! ⏳
+            <span>⚠️ TARIF EXCLUSIF EXPIRE LE 12/07 À 23H :</span>
+            <span className="text-white font-mono bg-black/60 px-1.5 py-0.5 rounded ml-1 border border-orange-500/20 text-[11px] tracking-wide font-black">
+              {timeLeft.isExpired ? "EXPIRED" : `${timeLeft.days}j ${String(timeLeft.hours).padStart(2, "0")}h ${String(timeLeft.minutes).padStart(2, "0")}m ${String(timeLeft.seconds).padStart(2, "0")}s`}
+            </span>
           </div>
 
           {/* Golden animated bouncy CTA */}

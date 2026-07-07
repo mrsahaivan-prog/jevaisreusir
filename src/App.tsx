@@ -293,7 +293,7 @@ export default function App() {
     setLoadingText("Redirection vers la passerelle de paiement...");
     await new Promise((resolve) => setTimeout(resolve, 400));
 
-    const targetUrl = "https://mzplus.mychariow.shop/prd_4e7cof60/checkout";
+    const targetUrl = "https://mzplus.mychariow.shop/prd_knd1e076";
 
     try {
       setCheckoutUrl(targetUrl);
@@ -450,7 +450,7 @@ export default function App() {
       <div className="min-h-screen bg-[#050505] text-gray-100 selection:bg-[#D4AF37] selection:text-black font-sans relative">
         <SalesPage
           onJoinClick={() => {
-            window.location.href = "https://mzplus.mychariow.shop/prd_4e7cof60/checkout";
+            window.location.href = "https://mzplus.mychariow.shop/prd_knd1e076";
           }}
           onBackClick={() => {
             setView('landing');
