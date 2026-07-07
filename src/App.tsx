@@ -7,6 +7,7 @@ import React, { useState, useEffect, useRef } from "react";
 import { motion, AnimatePresence } from "motion/react";
 import { CustomVideoPlayer } from "./components/CustomVideoPlayer";
 import { SalesPage, getPriceForCountry } from "./components/SalesPage";
+import AdminPanel from "./components/AdminPanel";
 import {
   Play,
   Volume2,
@@ -26,7 +27,16 @@ import {
   ChevronRight,
   Check,
   X,
-  Info
+  Info,
+  Flame,
+  Rocket,
+  Gift,
+  Target,
+  Heart,
+  Globe,
+  Lock,
+  Zap,
+  ArrowLeft
 } from "lucide-react";
 
 // Types
@@ -117,13 +127,93 @@ const LIVE_NOTIFICATIONS = [
   { name: "Arnaud N.", city: "Cotonou", country: "🇧🇯", action: "regarde la vidéo de formation" }
 ];
 
+// High converting benefits list adapted from the sales page
+const BENEFITS = [
+  {
+    id: "benefit-1",
+    number: "01",
+    icon: "📚",
+    title: "Accès à des formations complètes",
+    strongLabel: "pour apprendre à générer des revenus en ligne",
+    description: "Découvrez la méthode étape-par-étape ultra simplifiée pour transformer votre simple téléphone en machine à sous ! 💸 Apprenez à votre rythme et commencez à encaisser sans aucune connaissance technique préalable. Tout est prémâché pour vous ! 🎉🚀",
+    badge: "Inclus à vie 💎",
+    accent: "from-yellow-500/10 to-transparent"
+  },
+  {
+    id: "benefit-2",
+    number: "02",
+    icon: "🤝",
+    title: "Vous êtes accompagné pas à pas",
+    strongLabel: "jusqu’à l’atteinte de la liberté financière",
+    description: "Vous n'êtes plus jamais seul ! 🫂 Notre équipe d'experts ultra motivés est disponible pour vous tenir par la main au quotidien, répondre à vos questions et vous booster vers les sommets. Ensemble, on va chercher votre succès ! 💪❤️",
+    badge: "Suivi 1-on-1 🔥",
+    accent: "from-orange-500/10 to-transparent"
+  },
+  {
+    id: "benefit-3",
+    number: "03",
+    icon: "⚙️",
+    title: "Vous avez accès à des systèmes",
+    strongLabel: "simples et automatisés pour générer des revenus sur Internet",
+    description: "Activez votre système automatisé en 1 clic ! ⚡ Copiez-collez nos tunnels secrets et nos processus de gains déjà optimisés pour votre téléphone. Laissez l'automatisation faire 90% du travail difficile ! 📱✨",
+    badge: "Clé en main 🎯",
+    accent: "from-yellow-500/10 to-transparent"
+  },
+  {
+    id: "benefit-4",
+    number: "04",
+    icon: "🎁",
+    title: "Récompenses mensuelles",
+    strongLabel: "basées sur l’activité et la performance de l’utilisateur",
+    description: "Gagnez des primes en cash et des bonus exclusifs chaque fin de mois ! 🎁 Plus vous participez et appliquez les conseils, plus notre écosystème vous récompense financièrement. C'est le booster ultime ! 💰🥳",
+    badge: "Partage de Profits 🤑",
+    accent: "from-orange-500/10 to-transparent"
+  }
+];
+
 export default function App() {
   // Navigation & Scroll triggers
   const videoSectionRef = useRef<HTMLDivElement>(null);
   const ctaSectionRef = useRef<HTMLDivElement>(null);
 
   // States
-  const [view, setView] = useState<'landing' | 'sales'>('landing');
+  const [view, setView] = useState<'landing' | 'admin'>('landing');
+
+  // Synchronize URL path with React state for /admin routing
+  useEffect(() => {
+    const handlePathChange = () => {
+      if (window.location.pathname === "/admin") {
+        setView("admin");
+      } else {
+        setView("landing");
+      }
+    };
+    
+    handlePathChange();
+    window.addEventListener("popstate", handlePathChange);
+    return () => window.removeEventListener("popstate", handlePathChange);
+  }, []);
+
+  useEffect(() => {
+    const currentPath = window.location.pathname;
+    if (view === "admin" && currentPath !== "/admin") {
+      window.history.pushState({}, "", "/admin");
+    } else if (view === "landing" && currentPath !== "/" && currentPath !== "") {
+      window.history.pushState({}, "", "/");
+    }
+  }, [view]);
+
+  // Track page visit on mount
+  useEffect(() => {
+    fetch("/api/visits", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        path: window.location.pathname,
+        referrer: document.referrer || "direct"
+      })
+    }).catch((err) => console.error("Error tracking visit:", err));
+  }, []);
   const [isPlaying, setIsPlaying] = useState(false);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedCountry, setSelectedCountry] = useState<Country>(COUNTRIES[0]);
@@ -154,6 +244,43 @@ export default function App() {
   // Countdown Timer states for CTA
   const [secondsLeft, setSecondsLeft] = useState(30);
   const [timerStarted, setTimerStarted] = useState(false);
+
+  // Pricing urgency countdown timer
+  const [timeLeft, setTimeLeft] = useState<{
+    days: number;
+    hours: number;
+    minutes: number;
+    seconds: number;
+    isExpired: boolean;
+  }>({ days: 0, hours: 0, minutes: 0, seconds: 0, isExpired: false });
+
+  useEffect(() => {
+    const calculateTimeLeft = () => {
+      // Expiration Sunday, July 12, 2026, at 23:00 (11:00 PM)
+      const targetDate = new Date("2026-07-12T23:00:00");
+      const difference = +targetDate - +new Date();
+      
+      if (difference <= 0) {
+        return { days: 0, hours: 0, minutes: 0, seconds: 0, isExpired: true };
+      }
+
+      return {
+        days: Math.floor(difference / (1000 * 60 * 60 * 24)),
+        hours: Math.floor((difference / (1000 * 60 * 60)) % 24),
+        minutes: Math.floor((difference / 1000 / 60) % 60),
+        seconds: Math.floor((difference / 1000) % 60),
+        isExpired: false
+      };
+    };
+
+    setTimeLeft(calculateTimeLeft());
+
+    const timer = setInterval(() => {
+      setTimeLeft(calculateTimeLeft());
+    }, 1000);
+
+    return () => clearInterval(timer);
+  }, []);
 
   // Randomize viewers and seats occasionally
   useEffect(() => {
@@ -225,6 +352,13 @@ export default function App() {
   const handleWatchVideo = () => {
     setIsPlaying(true);
     setTimerStarted(true);
+    
+    // Track video click in database
+    fetch("/api/video-clicks", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ source: "watch_video_cta" })
+    }).catch((err) => console.error("Error tracking video click:", err));
     
     // Give a brief moment for layout/render updates, then scroll with high precision
     setTimeout(() => {
@@ -307,6 +441,23 @@ export default function App() {
       localStorage.setItem("mz_phone", phone);
       localStorage.setItem("mz_lead_registered", "true");
 
+      // Save to server-side database for admin panel stats
+      try {
+        await fetch("/api/leads", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            name,
+            email,
+            phone,
+            country: selectedCountry.name,
+            countryCode: selectedCountry.flag
+          })
+        });
+      } catch (err) {
+        console.error("Failed to save lead in server database:", err);
+      }
+
       // Direct redirection to the specified Chariow checkout URL
       try {
         window.location.href = targetUrl;
@@ -326,9 +477,29 @@ export default function App() {
     // Keep form submitted true or let them view success screen again
   };
 
-  // Open modal directly
+  // Open registration redirect directly
   const openRegistrationModal = () => {
-    setIsModalOpen(true);
+    const targetUrl = "https://mzplus.mychariow.shop/prd_knd1e076";
+    
+    // Log the click event to our database for admin analytics
+    fetch("/api/leads", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        name: "Redirection Directe",
+        email: "direct_checkout@chariow.shop",
+        phone: "Direct",
+        country: selectedCountry.name,
+        countryCode: selectedCountry.flag
+      })
+    }).catch((err) => console.error("Failed to log redirect click:", err));
+
+    try {
+      window.location.href = targetUrl;
+    } catch (err) {
+      console.log("Direct redirect failed/blocked, fallback window.open", err);
+      window.open(targetUrl, "_blank");
+    }
   };
 
   const faqs = [
@@ -445,23 +616,8 @@ export default function App() {
     }
   ];
 
-  if (view === 'sales') {
-    return (
-      <div className="min-h-screen bg-[#050505] text-gray-100 selection:bg-[#D4AF37] selection:text-black font-sans relative">
-        <SalesPage
-          onJoinClick={() => {
-            window.location.href = "https://mzplus.mychariow.shop/prd_knd1e076";
-          }}
-          onBackClick={() => {
-            setView('landing');
-          }}
-          selectedCountry={selectedCountry}
-          onCountrySelect={(country) => {
-            setSelectedCountry(country);
-          }}
-        />
-      </div>
-    );
+  if (view === 'admin') {
+    return <AdminPanel onBackToHome={() => setView('landing')} />;
   }
 
   return (
@@ -702,58 +858,388 @@ export default function App() {
             className="w-full max-w-[310px] sm:max-w-[340px] pt-1 relative z-20 text-center animate-fade-in"
           >
             {/* Explanatory text to let user know they must watch the video to unlock access */}
-            {(!timerStarted || secondsLeft > 0) && (
-              <div className="mb-2.5 text-[10px] font-semibold tracking-wider text-amber-500/80 uppercase flex items-center justify-center gap-1 bg-amber-500/5 py-1 px-3 rounded-full border border-amber-500/10">
-                <span className="w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse" />
-                Regardez la vidéo pour débloquer l'accès aux inscriptions
-              </div>
-            )}
+            <div className="mb-2.5 text-[10px] font-bold tracking-wider text-[#D4AF37] uppercase flex items-center justify-center gap-1.5 bg-amber-500/5 py-1 px-3 rounded-full border border-amber-500/10">
+              <span className="w-1.5 h-1.5 rounded-full bg-[#D4AF37] animate-pulse" />
+              {isPlaying ? "🔴 LECTURE DE LA VIDÉO EN COURS..." : "🎬 APPUYEZ SUR LA VIDÉO CI-DESSUS POUR COMPRENDRE LE SYSTÈME"}
+            </div>
 
             <div className="w-full relative">
-              {!timerStarted ? (
-                <button
-                  disabled
-                  className="w-full py-4.5 bg-zinc-900/60 border border-white/5 text-gray-500 font-bold text-[10px] sm:text-xs rounded-full flex items-center justify-center gap-2 cursor-not-allowed transition-all duration-300 font-display"
-                >
-                  <ShieldCheck className="w-4 h-4 text-gray-600" />
-                  <span className="tracking-wider uppercase">🔒 Regarder la vidéo pour débloquer l'accès</span>
-                </button>
-              ) : secondsLeft > 0 ? (
-                <button
-                  disabled
-                  className="relative w-full overflow-hidden py-4.5 bg-zinc-900 border border-white/10 text-gray-400 font-bold text-xs sm:text-sm rounded-full flex items-center justify-center gap-2 cursor-not-allowed font-display"
-                >
-                  {/* Visual loading bar */}
-                  <div 
-                    className="absolute left-0 top-0 bottom-0 bg-gradient-to-r from-[#D4AF37]/10 to-[#F27D26]/20 transition-all duration-1000 ease-linear"
-                    style={{ width: `${((30 - secondsLeft) / 30) * 100}%` }}
-                  />
-                  <Clock className="w-4 h-4 text-[#D4AF37] animate-spin relative z-10" />
-                  <span className="tracking-wider uppercase relative z-10 text-[10px] sm:text-xs">
-                    Déblocage de l'accès dans {secondsLeft}s...
-                  </span>
-                </button>
-              ) : (
-                <motion.button
-                  onClick={() => {
-                    setView("sales");
-                    window.scrollTo({ top: 0, behavior: "smooth" });
-                  }}
-                  id="btn_rejoindre_mz_cta"
-                  initial={{ scale: 0.95 }}
-                  animate={{ scale: [1, 1.02, 1] }}
-                  transition={{ repeat: Infinity, duration: 2, ease: "easeInOut" }}
-                  className="group relative w-full py-4.5 bg-gradient-to-r from-[#D4AF37] to-[#F27D26] hover:scale-[1.02] active:scale-[0.98] text-black font-extrabold text-xs sm:text-sm rounded-full shadow-[0_12px_35px_rgba(242,125,38,0.4)] cursor-pointer flex items-center justify-between px-6 transition-all duration-300 font-display"
-                >
-                  <Sparkles className="w-4 h-4 text-black fill-black flex-shrink-0" />
-                  <span className="tracking-wider uppercase font-black text-center flex-1">Je veux rejoindre MZ+</span>
-                  <ChevronRight className="w-4.5 h-4.5 text-black stroke-[3.5] group-hover:translate-x-1 transition-transform flex-shrink-0" />
-                </motion.button>
-              )}
+              <motion.button
+                onClick={() => {
+                  const targetEl = document.getElementById("section_benefits");
+                  if (targetEl) {
+                    targetEl.scrollIntoView({ behavior: "smooth", block: "start" });
+                  }
+                }}
+                id="btn_rejoindre_mz_cta"
+                initial={{ scale: 0.95 }}
+                animate={{ scale: [1, 1.04, 1], boxShadow: ["0 4px 15px rgba(242,125,38,0.25)", "0 4px 35px rgba(242,125,38,0.6)", "0 4px 15px rgba(242,125,38,0.25)"] }}
+                transition={{ repeat: Infinity, duration: 1.8, ease: "easeInOut" }}
+                className="group relative w-full py-4.5 bg-gradient-to-r from-[#D4AF37] to-[#F27D26] hover:scale-[1.03] active:scale-[0.98] text-black font-extrabold text-xs sm:text-sm rounded-full cursor-pointer flex items-center justify-between px-6 transition-all duration-300 font-display"
+              >
+                <Sparkles className="w-4 h-4 text-black fill-black flex-shrink-0" />
+                <span className="tracking-wider uppercase font-black text-center flex-1">Je veux rejoindre MZ+</span>
+                <ChevronRight className="w-4.5 h-4.5 text-black stroke-[3.5] group-hover:translate-x-1 transition-transform flex-shrink-0" />
+              </motion.button>
             </div>
           </div>
 
         </div>
+      </section>
+
+      {/* Scroll indicator for instant CRO transition */}
+      <div className="flex flex-col items-center justify-center -mt-2 mb-10 relative z-30 pointer-events-none">
+        <p className="text-[10px] tracking-widest uppercase font-extrabold text-[#D4AF37]/80 mb-1 animate-pulse">
+          Défilez pour découvrir les bénéfices exclusifs
+        </p>
+        <motion.div
+          animate={{ y: [0, 5, 0] }}
+          transition={{ repeat: Infinity, duration: 1.5, ease: "easeInOut" }}
+          className="text-amber-500 text-sm font-black"
+        >
+          ▼
+        </motion.div>
+      </div>
+
+      {/* Embedded Benefits Section - Compact, Super Vibrant Points with High Emotion */}
+      <section id="section_benefits" className="max-w-xl mx-auto px-4 mb-8 relative z-30 scroll-mt-6">
+        <motion.div
+          initial={{ opacity: 0, y: 15 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true }}
+          transition={{ duration: 0.6 }}
+          className="bg-gradient-to-b from-zinc-950 via-zinc-900 to-zinc-950 border-2 border-amber-500/40 rounded-3xl p-5 sm:p-6 backdrop-blur-md relative overflow-hidden shadow-[0_0_50px_rgba(212,175,55,0.2)]"
+        >
+          {/* Intense golden pulse indicator behind the title */}
+          <div className="absolute top-0 left-1/2 -translate-x-1/2 w-48 h-12 bg-amber-500/15 rounded-full blur-2xl pointer-events-none animate-pulse" />
+
+          <h2 className="text-xs uppercase tracking-widest text-[#D4AF37] font-black text-center mb-1">
+            🔥 APRÈS VOTRE INSCRIPTION, VOUS AVEZ ACCÈS À :
+          </h2>
+          <p className="text-[9px] uppercase tracking-wider text-gray-400 text-center mb-5 font-bold animate-pulse">
+            Profitez de votre opportunité unique aujourd'hui ! 🚀
+          </p>
+
+          <div className="space-y-3.5 mb-6 text-left">
+            {/* Benefit 1 */}
+            <div className="flex items-center gap-2.5 group">
+              <span className="text-[#D4AF37] text-lg font-black shrink-0 animate-bounce">—</span>
+              <p className="text-xs sm:text-sm font-extrabold text-white leading-tight group-hover:text-amber-300 transition-colors">
+                Accès à des formations complètes qui vous permettront de gagner de l'argent 💸
+              </p>
+            </div>
+
+            {/* Benefit 2 */}
+            <div className="flex items-center gap-2.5 group">
+              <span className="text-[#D4AF37] text-lg font-black shrink-0 animate-bounce">—</span>
+              <p className="text-xs sm:text-sm font-extrabold text-white leading-tight group-hover:text-amber-300 transition-colors">
+                On t'accompagne étape par étape jusqu'à ta réussite ! 🤝❤️
+              </p>
+            </div>
+
+            {/* Benefit 3 */}
+            <div className="flex items-center gap-2.5 group">
+              <span className="text-[#D4AF37] text-lg font-black shrink-0 animate-bounce">—</span>
+              <p className="text-xs sm:text-sm font-extrabold text-white leading-tight group-hover:text-amber-300 transition-colors">
+                Vous pourrez générer des revenus et recevoir vos gains dès votre inscription ! ⚡💰
+              </p>
+            </div>
+
+            {/* Benefit 4 */}
+            <div className="flex items-center gap-2.5 group">
+              <span className="text-[#D4AF37] text-lg font-black shrink-0 animate-bounce">—</span>
+              <p className="text-xs sm:text-sm font-extrabold text-white leading-tight group-hover:text-amber-300 transition-colors">
+                Vous avez droit à des récompenses mensuelles 🎁🏆
+              </p>
+            </div>
+          </div>
+
+          {/* Emotional High-converting Bottom CTA inside the benefit box */}
+          <div className="border-t border-white/5 pt-5 text-center">
+            <motion.button
+              onClick={openRegistrationModal}
+              initial={{ scale: 1 }}
+              animate={{ scale: [1, 1.04, 1], boxShadow: ["0 4px 20px rgba(212,175,55,0.25)", "0 4px 35px rgba(212,175,55,0.6)", "0 4px 20px rgba(212,175,55,0.25)"] }}
+              transition={{ repeat: Infinity, duration: 1.8, ease: "easeInOut" }}
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.98 }}
+              className="w-full py-3.5 bg-gradient-to-r from-yellow-400 via-[#D4AF37] to-amber-500 hover:brightness-110 text-black font-black text-xs sm:text-sm rounded-xl flex flex-col items-center justify-center gap-0.5 px-4 transition-all duration-300 font-display cursor-pointer"
+            >
+              <div className="flex items-center justify-center gap-1.5">
+                <Sparkles className="w-3.5 h-3.5 text-black fill-black shrink-0 animate-pulse" />
+                <span className="tracking-wider uppercase font-black text-center text-xs sm:text-sm">
+                  JE M'INCRIS MAINTENANT & TOUT DÉBLOQUER ⚡
+                </span>
+                <ChevronRight className="w-3.5 h-3.5 text-black stroke-[3.5] shrink-0" />
+              </div>
+              <span className="text-[9px] opacity-90 font-bold tracking-wider uppercase">
+                TARIF SPÉCIAL UNIQUE : SEULEMENT {getPriceForCountry(selectedCountry.code).amount} {getPriceForCountry(selectedCountry.code).currency} À VIE · SANS ABONNEMENT
+              </span>
+            </motion.button>
+            <p className="text-[8px] text-[#D4AF37] mt-2.5 font-bold animate-pulse uppercase tracking-wider">
+              🚀 PLACES LIMITÉES CE MOIS-CI · SÉCURISEZ VOTRE ACCÈS IMMÉDIAT !
+            </p>
+          </div>
+        </motion.div>
+      </section>
+
+      {/* Hyper Emotional Proof of Success / Testimonials with lots of emojis */}
+      <section className="max-w-3xl mx-auto px-4 sm:px-6 mb-12 relative z-30">
+        <div className="text-center mb-6">
+          <h2 className="text-xs uppercase tracking-widest text-amber-400 font-black mb-1 flex items-center justify-center gap-1.5">
+            <span>🌟</span> PREUVES DE RÉUSSITE VIP <span>🌟</span>
+          </h2>
+          <h3 className="text-xl sm:text-2xl font-black text-white font-display">
+            Leur vie a totalement changé ! 😍
+          </h3>
+          <p className="text-xs text-gray-400 mt-1 max-w-md mx-auto">
+            Découvrez les résultats sincères des membres actifs de la communauté !
+          </p>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          
+          {/* Testimonial 1 */}
+          <motion.div
+            initial={{ opacity: 0, y: 15 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            transition={{ duration: 0.5, delay: 0.1 }}
+            className="bg-zinc-900/60 border border-orange-500/20 rounded-2xl p-5 hover:border-amber-400/40 transition-all duration-300 relative shadow-md"
+          >
+            <div className="absolute top-2 right-2 text-xl">❤️</div>
+            <div className="flex items-center gap-3 mb-3">
+              <div className="w-10 h-10 rounded-full bg-gradient-to-tr from-yellow-400 to-orange-500 flex items-center justify-center text-black font-black text-xs shadow">
+                AD
+              </div>
+              <div>
+                <div className="flex items-center gap-1">
+                  <p className="text-xs font-black text-white">Aminata D.</p>
+                  <span className="text-xs">🇨🇮</span>
+                </div>
+                <p className="text-[9px] text-amber-300/80 font-bold">Abidjan · Membre VIP Actif</p>
+              </div>
+            </div>
+
+            <div className="flex items-center gap-0.5 mb-2">
+              {[...Array(5)].map((_, i) => (
+                <span key={i} className="text-xs text-yellow-400">★</span>
+              ))}
+              <span className="text-[9px] bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 px-1.5 py-0.5 rounded-md ml-2 font-black">
+                Membre Vérifié ✅
+              </span>
+            </div>
+
+            <p className="text-[11px] text-gray-200 leading-relaxed font-normal italic">
+              "C'est le paradis ! 😭 Je n'avais aucune base technique, mais les guides étape par étape de MZ+ m'ont tout appris avec mon téléphone portable ! J'ai déjà remboursé mon accès dès ma première semaine ! Merci infiniment ! ❤️"
+            </p>
+          </motion.div>
+
+          {/* Testimonial 2 */}
+          <motion.div
+            initial={{ opacity: 0, y: 15 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            transition={{ duration: 0.5, delay: 0.2 }}
+            className="bg-zinc-900/60 border border-orange-500/20 rounded-2xl p-5 hover:border-amber-400/40 transition-all duration-300 relative shadow-md"
+          >
+            <div className="absolute top-2 right-2 text-xl">🔥</div>
+            <div className="flex items-center gap-3 mb-3">
+              <div className="w-10 h-10 rounded-full bg-gradient-to-tr from-orange-500 to-yellow-400 flex items-center justify-center text-black font-black text-xs shadow">
+                MS
+              </div>
+              <div>
+                <div className="flex items-center gap-1">
+                  <p className="text-xs font-black text-white">Moussa S.</p>
+                  <span className="text-xs">🇸🇳</span>
+                </div>
+                <p className="text-[9px] text-amber-300/80 font-bold">Dakar · Membre VIP Élite</p>
+              </div>
+            </div>
+
+            <div className="flex items-center gap-0.5 mb-2">
+              {[...Array(5)].map((_, i) => (
+                <span key={i} className="text-xs text-yellow-400">★</span>
+              ))}
+              <span className="text-[9px] bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 px-1.5 py-0.5 rounded-md ml-2 font-black">
+                VIP Élite ⭐
+              </span>
+            </div>
+
+            <p className="text-[11px] text-gray-200 leading-relaxed font-normal italic">
+              "Je n'en reviens toujours pas ! 🤯 Ma vie a totalement changé. J'applique juste les plans de MZ+ prémâchés et automatisés. C'est le meilleur choix de ma vie, l'accompagnement WhatsApp est tout simplement parfait !"
+            </p>
+          </motion.div>
+
+          {/* Testimonial 3 */}
+          <motion.div
+            initial={{ opacity: 0, y: 15 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            transition={{ duration: 0.5, delay: 0.3 }}
+            className="bg-zinc-900/60 border border-orange-500/20 rounded-2xl p-5 hover:border-amber-400/40 transition-all duration-300 relative shadow-md"
+          >
+            <div className="absolute top-2 right-2 text-xl">🥳</div>
+            <div className="flex items-center gap-3 mb-3">
+              <div className="w-10 h-10 rounded-full bg-gradient-to-tr from-yellow-400 to-orange-500 flex items-center justify-center text-black font-black text-xs shadow">
+                YK
+              </div>
+              <div>
+                <div className="flex items-center gap-1">
+                  <p className="text-xs font-black text-white">Youssef K.</p>
+                  <span className="text-xs">🇲🇦</span>
+                </div>
+                <p className="text-[9px] text-amber-300/80 font-bold">Marrakech · Membre VIP</p>
+              </div>
+            </div>
+
+            <div className="flex items-center gap-0.5 mb-2">
+              {[...Array(5)].map((_, i) => (
+                <span key={i} className="text-xs text-yellow-400">★</span>
+              ))}
+              <span className="text-[9px] bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 px-1.5 py-0.5 rounded-md ml-2 font-black">
+                Succès Validé ✨
+              </span>
+            </div>
+
+            <p className="text-[11px] text-gray-200 leading-relaxed font-normal italic">
+              "La meilleure décision de ma vie ! 💎 L'ambiance dans le groupe est ultra énergique, positive et pleine d'entraide. Les récompenses de fin de mois basées sur notre activité boostent énormément ! Foncez sans hésiter !"
+            </p>
+          </motion.div>
+        </div>
+      </section>
+
+      {/* High-Converting Pricing / Inscription Box - Expert Direct Sales Proposition */}
+      <section id="section_pricing_inscription" className="mb-12 max-w-xl mx-auto px-4 relative z-30">
+        <motion.div
+          initial={{ opacity: 0, scale: 0.95 }}
+          whileInView={{ opacity: 1, scale: 1 }}
+          viewport={{ once: true }}
+          className="bg-gradient-to-b from-zinc-900 via-zinc-950 to-black border-2 border-amber-500/30 rounded-3xl p-6 sm:p-8 shadow-2xl relative overflow-hidden text-center"
+        >
+          {/* Visual sparkles */}
+          <div className="absolute top-3 right-3 animate-pulse text-lg">👑</div>
+          <div className="absolute bottom-3 left-3 animate-bounce text-lg">✨</div>
+
+          <span className="inline-block text-[9px] uppercase tracking-widest text-[#D4AF37] font-black bg-amber-500/10 px-3 py-1 rounded-full border border-amber-500/20 mb-3">
+            PROPOSITION DE VENTE UNIQUE EXCLUSIVE ⏳
+          </span>
+
+          <h3 className="text-xl sm:text-2xl font-black text-white font-display mb-2 uppercase tracking-wide leading-tight">
+            DEVENIR MEMBRE VIP À VIE
+          </h3>
+          
+          <p className="text-xs text-gray-400 mb-6 max-w-sm mx-auto leading-relaxed">
+            Rejoignez instantanément MZ+ et débloquez votre accompagnement, vos formations et votre système clé en main. Pas d'abonnement, pas de frais cachés.
+          </p>
+
+          {/* Countdown Timer Grid */}
+          <div className="grid grid-cols-4 gap-2 max-w-xs mx-auto mb-6">
+            <div className="bg-black/50 border border-white/10 rounded-xl py-2 px-1 text-center">
+              <span className="block text-base sm:text-lg font-black font-display text-white leading-none">
+                {timeLeft.isExpired ? "0" : timeLeft.days}
+              </span>
+              <span className="text-[9px] text-amber-500 uppercase font-bold tracking-wider">Jours</span>
+            </div>
+            <div className="bg-black/50 border border-white/10 rounded-xl py-2 px-1 text-center">
+              <span className="block text-base sm:text-lg font-black font-display text-white leading-none">
+                {timeLeft.isExpired ? "0" : timeLeft.hours}
+              </span>
+              <span className="text-[9px] text-amber-500 uppercase font-bold tracking-wider">Heures</span>
+            </div>
+            <div className="bg-black/50 border border-white/10 rounded-xl py-2 px-1 text-center">
+              <span className="block text-base sm:text-lg font-black font-display text-white leading-none">
+                {timeLeft.isExpired ? "0" : timeLeft.minutes}
+              </span>
+              <span className="text-[9px] text-amber-500 uppercase font-bold tracking-wider">Min</span>
+            </div>
+            <div className="bg-black/50 border border-white/10 rounded-xl py-2 px-1 text-center">
+              <span className="block text-base sm:text-lg font-black font-display text-white leading-none">
+                {timeLeft.isExpired ? "0" : timeLeft.seconds}
+              </span>
+              <span className="text-[9px] text-amber-500 uppercase font-bold tracking-wider">Sec</span>
+            </div>
+          </div>
+
+          {/* Pricing display with interactive country resolution */}
+          <div className="bg-white/[0.02] border border-white/5 rounded-2xl p-4 mb-6">
+            <p className="text-xs text-gray-400 mb-1">Tarif Spécial Membre Unique :</p>
+            <div className="flex items-center justify-center gap-3">
+              <span className="text-sm font-bold opacity-40 line-through text-gray-500">
+                {selectedCountry.code === "FR" || selectedCountry.code === "EU" ? "99 €" : `${selectedCountry.code === "CD" ? "250 000" : selectedCountry.code === "GN" ? "750 000" : "65 000"} ${getPriceForCountry(selectedCountry.code).currency}`}
+              </span>
+              <span className="text-3xl font-black text-transparent bg-clip-text bg-gradient-to-r from-yellow-400 to-orange-500 drop-shadow-[0_0_15px_rgba(212,175,55,0.3)] font-display">
+                {getPriceForCountry(selectedCountry.code).amount} {getPriceForCountry(selectedCountry.code).currency}
+              </span>
+            </div>
+
+            {/* Country Selector link inside checkout box */}
+            <div className="mt-3 relative flex items-center justify-center gap-1.5">
+              <span className="text-xs text-gray-400">Pays :</span>
+              <button
+                onClick={() => setCountryDropdownOpen(!countryDropdownOpen)}
+                className="text-xs font-bold text-[#D4AF37] hover:underline flex items-center gap-1 cursor-pointer"
+              >
+                <span>{selectedCountry.flag} {selectedCountry.name}</span>
+                <ChevronDown className="w-3 h-3 text-[#D4AF37]" />
+              </button>
+
+              <AnimatePresence>
+                {countryDropdownOpen && (
+                  <motion.div
+                    initial={{ opacity: 0, y: 5 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: 5 }}
+                    className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 w-56 max-h-56 overflow-y-auto bg-zinc-950 border border-white/10 rounded-xl shadow-2xl z-50 p-1"
+                  >
+                    {COUNTRIES.map((country) => (
+                      <button
+                        key={country.code}
+                        onClick={() => {
+                          setSelectedCountry(country);
+                          setCountryDropdownOpen(false);
+                        }}
+                        className="w-full flex items-center justify-between px-3 py-2 text-xs text-gray-300 hover:text-white hover:bg-white/[0.05] rounded-lg cursor-pointer transition-colors"
+                      >
+                        <span className="flex items-center gap-2">
+                          <span>{country.flag}</span>
+                          <span>{country.name}</span>
+                        </span>
+                        <span className="text-gray-400 font-mono">{country.prefix}</span>
+                      </button>
+                    ))}
+                  </motion.div>
+                )}
+              </AnimatePresence>
+            </div>
+          </div>
+
+          {/* Primary CTA Button with price embedded inside for high conversion */}
+          <motion.button
+            onClick={openRegistrationModal}
+            initial={{ scale: 1 }}
+            animate={{ scale: [1, 1.04, 1], boxShadow: ["0 4px 20px rgba(242,125,38,0.25)", "0 4px 35px rgba(242,125,38,0.6)", "0 4px 20px rgba(242,125,38,0.25)"] }}
+            transition={{ repeat: Infinity, duration: 1.8, ease: "easeInOut" }}
+            whileHover={{ scale: 1.05 }}
+            whileTap={{ scale: 0.97 }}
+            className="w-full py-4.5 bg-gradient-to-r from-yellow-400 via-orange-500 to-yellow-400 hover:brightness-110 text-black font-black text-xs sm:text-sm rounded-2xl flex flex-col items-center justify-center gap-0.5 px-6 transition-all duration-300 font-display cursor-pointer"
+          >
+            <div className="flex items-center justify-center gap-2">
+              <Sparkles className="w-4 h-4 text-black fill-black shrink-0" />
+              <span className="tracking-widest uppercase font-black text-center text-xs sm:text-sm">
+                S'INSCRIRE & COMMENCER VIP
+              </span>
+              <ChevronRight className="w-4 h-4 text-black stroke-[3.5] shrink-0" />
+            </div>
+            <span className="text-[10px] sm:text-[11px] opacity-80 font-black tracking-wider uppercase">
+              SEULEMENT {getPriceForCountry(selectedCountry.code).amount} {getPriceForCountry(selectedCountry.code).currency} À VIE · SANS ABONNEMENT
+            </span>
+          </motion.button>
+
+          <p className="text-[10px] text-amber-400/80 mt-3 font-bold flex items-center justify-center gap-1 animate-pulse">
+            <span>🔒</span> PAIEMENT ULTRA SÉCURISÉ · ACCÈS IMMÉDIAT ET À VIE
+          </p>
+        </motion.div>
       </section>
 
 
@@ -805,6 +1291,57 @@ export default function App() {
             );
           })}
         </div>
+      </section>
+
+      {/* Dynamic High-Converting FAQ Bottom CTA Section */}
+      <section className="max-w-xl mx-auto px-4 mb-16 text-center relative z-30">
+        <motion.div
+          initial={{ opacity: 0, y: 15 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true }}
+          transition={{ duration: 0.6 }}
+          className="bg-gradient-to-b from-zinc-950 via-zinc-900 to-zinc-950 border-2 border-amber-500/30 rounded-3xl p-6 sm:p-8 backdrop-blur-md relative overflow-hidden shadow-[0_0_50px_rgba(212,175,55,0.15)]"
+        >
+          {/* Intense subtle golden pulse indicator */}
+          <div className="absolute top-0 left-1/2 -translate-x-1/2 w-48 h-12 bg-amber-500/10 rounded-full blur-2xl pointer-events-none" />
+
+          <span className="inline-block text-[9px] uppercase tracking-widest text-[#D4AF37] font-black bg-amber-500/10 px-3 py-1 rounded-full border border-amber-500/20 mb-3">
+            DERNIÈRE ÉTAPE VERS VOTRE RÉUSSITE 🏆
+          </span>
+
+          <h3 className="text-lg sm:text-xl font-black text-white font-display mb-2 uppercase tracking-wide">
+            🔥 REJOIGNEZ LES MEMBRES VIP MZ+ AUJOURD'HUI !
+          </h3>
+          
+          <p className="text-xs text-gray-400 mb-6 max-w-sm mx-auto leading-relaxed">
+            Toutes les réponses sont là. Votre plan de réussite est prêt. Prenez la décision qui va changer votre quotidien à jamais.
+          </p>
+
+          <motion.button
+            onClick={openRegistrationModal}
+            initial={{ scale: 1 }}
+            animate={{ scale: [1, 1.04, 1], boxShadow: ["0 4px 20px rgba(212,175,55,0.25)", "0 4px 35px rgba(212,175,55,0.6)", "0 4px 20px rgba(212,175,55,0.25)"] }}
+            transition={{ repeat: Infinity, duration: 1.8, ease: "easeInOut" }}
+            whileHover={{ scale: 1.05 }}
+            whileTap={{ scale: 0.98 }}
+            className="w-full py-4 bg-gradient-to-r from-yellow-400 via-[#D4AF37] to-amber-500 hover:brightness-110 text-black font-black text-xs sm:text-sm rounded-xl flex flex-col items-center justify-center gap-0.5 px-4 transition-all duration-300 font-display cursor-pointer"
+          >
+            <div className="flex items-center justify-center gap-1.5">
+              <Sparkles className="w-3.5 h-3.5 text-black fill-black shrink-0 animate-pulse" />
+              <span className="tracking-wider uppercase font-black text-center text-xs sm:text-sm">
+                REJOINDRE MZ+ MAINTENANT & TOUT DE SUITE ⚡
+              </span>
+              <ChevronRight className="w-3.5 h-3.5 text-black stroke-[3.5] shrink-0" />
+            </div>
+            <span className="text-[9px] opacity-90 font-bold tracking-wider uppercase">
+              TARIF SPÉCIAL UNIQUE : SEULEMENT {getPriceForCountry(selectedCountry.code).amount} {getPriceForCountry(selectedCountry.code).currency} À VIE · SANS ABONNEMENT
+            </span>
+          </motion.button>
+          
+          <p className="text-[9px] text-[#D4AF37] mt-3 font-bold animate-pulse">
+            🚀 PAS D'ENGAGEMENT · ACCÈS IMMÉDIAT ET À VIE
+          </p>
+        </motion.div>
       </section>
 
       {/* High-End Immersive Registration Modal */}
@@ -1028,6 +1565,21 @@ export default function App() {
                       href={checkoutUrl}
                       target="_blank"
                       rel="noreferrer"
+                      onClick={async () => {
+                        try {
+                          await fetch("/api/clicks", {
+                            method: "POST",
+                            headers: { "Content-Type": "application/json" },
+                            body: JSON.stringify({
+                              email: email,
+                              phone: phone,
+                              source: "landing_modal_checkout_cta"
+                            })
+                          });
+                        } catch (err) {
+                          console.error("Failed to track modal checkout click:", err);
+                        }
+                      }}
                       className="group relative w-full bg-gradient-to-r from-[#D4AF37] to-[#F27D26] hover:scale-[1.02] active:scale-[0.98] text-black font-black py-4 px-4 rounded-xl shadow-[0_0_25px_rgba(242,125,38,0.3)] hover:shadow-[0_0_35px_rgba(242,125,38,0.5)] flex items-center justify-center gap-2.5 transition-all duration-300 cursor-pointer"
                     >
                       <span className="absolute -inset-0.5 rounded-xl bg-gradient-to-r from-[#D4AF37] to-[#F27D26] blur opacity-30 group-hover:opacity-60 transition-opacity animate-pulse" />

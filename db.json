@@ -1,0 +1,169 @@
+{
+  "leads": [
+    {
+      "id": "lead_a8d3f1",
+      "name": "Moussa Diop",
+      "email": "moussa.diop@gmail.com",
+      "phone": "+221776543210",
+      "country": "Sénégal",
+      "countryCode": "🇸🇳",
+      "timestamp": "2026-07-07T14:32:10.124Z"
+    },
+    {
+      "id": "lead_b9e2f4",
+      "name": "Awa Ndiaye",
+      "email": "awa.ndiaye@outlook.sn",
+      "phone": "+221703210987",
+      "country": "Sénégal",
+      "countryCode": "🇸🇳",
+      "timestamp": "2026-07-07T11:15:44.201Z"
+    },
+    {
+      "id": "lead_c3a7d9",
+      "name": "Koffi Yao",
+      "email": "koffi.yao@yahoo.fr",
+      "phone": "+2250708091011",
+      "country": "Côte d'Ivoire",
+      "countryCode": "🇨🇮",
+      "timestamp": "2026-07-07T08:44:12.330Z"
+    },
+    {
+      "id": "lead_d4e8c1",
+      "name": "Marie-Thérèse Gnamkey",
+      "email": "mt.gnamkey@gmail.com",
+      "phone": "+2250544556677",
+      "country": "Côte d'Ivoire",
+      "countryCode": "🇨🇮",
+      "timestamp": "2026-07-06T20:10:05.150Z"
+    },
+    {
+      "id": "lead_e5f9a2",
+      "name": "Jean-Pierre Ndong",
+      "email": "jp.ndong@gmail.com",
+      "phone": "+24166223344",
+      "country": "Gabon",
+      "countryCode": "🇬🇦",
+      "timestamp": "2026-07-06T18:12:30.400Z"
+    },
+    {
+      "id": "lead_f6g0b8",
+      "name": "Saliou Diallo",
+      "email": "saliou.diallo@hotmail.com",
+      "phone": "+224622110044",
+      "country": "Guinée",
+      "countryCode": "🇬🇳",
+      "timestamp": "2026-07-06T15:05:19.850Z"
+    },
+    {
+      "id": "lead_g7h1c9",
+      "name": "Marc Ondoua",
+      "email": "m.ondoua@yahoo.fr",
+      "phone": "+237699887766",
+      "country": "Cameroun",
+      "countryCode": "🇨🇲",
+      "timestamp": "2026-07-05T22:40:11.200Z"
+    },
+    {
+      "id": "lead_h8i2d0",
+      "name": "Esther Eyama",
+      "email": "esther.eyama@gmail.com",
+      "phone": "+237677553311",
+      "country": "Cameroun",
+      "countryCode": "🇨🇲",
+      "timestamp": "2026-07-05T19:15:33.600Z"
+    },
+    {
+      "id": "lead_i9j3e1",
+      "name": "Sékou Touré",
+      "email": "sekou.toure@gmail.com",
+      "phone": "+22370889900",
+      "country": "Mali",
+      "countryCode": "🇲🇱",
+      "timestamp": "2026-07-05T14:22:01.050Z"
+    },
+    {
+      "id": "lead_j0k4f2",
+      "name": "Fatou Sylla",
+      "email": "fatou.sylla@gmail.com",
+      "phone": "+221781234567",
+      "country": "Sénégal",
+      "countryCode": "🇸🇳",
+      "timestamp": "2026-07-04T16:55:40.300Z"
+    },
+    {
+      "id": "lead_k1l5g3",
+      "name": "Ange Koffi",
+      "email": "ange.koffi@yahoo.com",
+      "phone": "+2250102030405",
+      "country": "Côte d'Ivoire",
+      "countryCode": "🇨🇮",
+      "timestamp": "2026-07-04T11:05:12.750Z"
+    },
+    {
+      "id": "lead_l2m6h4",
+      "name": "Gervais Mba",
+      "email": "gervais.mba@gmail.com",
+      "phone": "+24177443322",
+      "country": "Gabon",
+      "countryCode": "🇬🇦",
+      "timestamp": "2026-07-03T18:40:22.900Z"
+    },
+    {
+      "id": "lead_m3n7i5",
+      "name": "Binta Barry",
+      "email": "binta.barry@outlook.com",
+      "phone": "+224664551122",
+      "country": "Guinée",
+      "countryCode": "🇬🇳",
+      "timestamp": "2026-07-03T09:30:15.110Z"
+    },
+    {
+      "id": "lead_n4o8j6",
+      "name": "Samuel Eto'o",
+      "email": "samuel.etoo@cameroon.cm",
+      "phone": "+237655001122",
+      "country": "Cameroun",
+      "countryCode": "🇨🇲",
+      "timestamp": "2026-07-02T15:10:45.600Z"
+    }
+  ],
+  "visits": [
+    { "id": "v1", "path": "/", "referrer": "direct", "ip": "196.207.240.11", "timestamp": "2026-07-07T14:30:00Z" },
+    { "id": "v2", "path": "/sales", "referrer": "direct", "ip": "196.207.240.11", "timestamp": "2026-07-07T14:31:30Z" },
+    { "id": "v3", "path": "/", "referrer": "https://t.co/ads", "ip": "41.82.110.55", "timestamp": "2026-07-07T11:10:00Z" },
+    { "id": "v4", "path": "/sales", "referrer": "https://t.co/ads", "ip": "41.82.110.55", "timestamp": "2026-07-07T11:12:15Z" },
+    { "id": "v5", "path": "/", "referrer": "https://instagram.com/", "ip": "197.234.12.99", "timestamp": "2026-07-07T08:40:00Z" },
+    { "id": "v6", "path": "/sales", "referrer": "https://instagram.com/", "ip": "197.234.12.99", "timestamp": "2026-07-07T08:42:00Z" },
+    { "id": "v7", "path": "/", "referrer": "direct", "ip": "154.72.160.2", "timestamp": "2026-07-06T20:05:00Z" },
+    { "id": "v8", "path": "/sales", "referrer": "direct", "ip": "154.72.160.2", "timestamp": "2026-07-06T20:08:20Z" },
+    { "id": "v9", "path": "/", "referrer": "https://facebook.com/", "ip": "197.211.35.41", "timestamp": "2026-07-06T18:00:00Z" },
+    { "id": "v10", "path": "/", "referrer": "https://tiktok.com/", "ip": "41.204.60.102", "timestamp": "2026-07-06T15:00:00Z" },
+    { "id": "v11", "path": "/sales", "referrer": "https://tiktok.com/", "ip": "41.204.60.102", "timestamp": "2026-07-06T15:02:10Z" },
+    { "id": "v12", "path": "/", "referrer": "direct", "ip": "41.138.89.200", "timestamp": "2026-07-05T22:35:00Z" },
+    { "id": "v13", "path": "/sales", "referrer": "direct", "ip": "41.138.89.200", "timestamp": "2026-07-05T22:38:15Z" },
+    { "id": "v14", "path": "/", "referrer": "https://t.co/ads", "ip": "154.73.12.80", "timestamp": "2026-07-05T19:10:00Z" },
+    { "id": "v15", "path": "/sales", "referrer": "https://t.co/ads", "ip": "154.73.12.80", "timestamp": "2026-07-05T19:14:00Z" },
+    { "id": "v16", "path": "/", "referrer": "direct", "ip": "196.220.10.45", "timestamp": "2026-07-05T14:15:00Z" },
+    { "id": "v17", "path": "/sales", "referrer": "direct", "ip": "196.220.10.45", "timestamp": "2026-07-05T14:20:00Z" },
+    { "id": "v18", "path": "/", "referrer": "https://tiktok.com/", "ip": "41.83.12.18", "timestamp": "2026-07-04T16:50:00Z" },
+    { "id": "v19", "path": "/sales", "referrer": "https://tiktok.com/", "ip": "41.83.12.18", "timestamp": "2026-07-04T16:53:20Z" },
+    { "id": "v20", "path": "/", "referrer": "https://facebook.com/", "ip": "197.228.40.112", "timestamp": "2026-07-04T11:00:00Z" },
+    { "id": "v21", "path": "/sales", "referrer": "https://facebook.com/", "ip": "197.228.40.112", "timestamp": "2026-07-04T11:03:00Z" },
+    { "id": "v22", "path": "/", "referrer": "direct", "ip": "154.72.88.55", "timestamp": "2026-07-03T18:35:00Z" },
+    { "id": "v23", "path": "/sales", "referrer": "direct", "ip": "154.72.88.55", "timestamp": "2026-07-03T18:38:00Z" },
+    { "id": "v24", "path": "/", "referrer": "https://instagram.com/", "ip": "41.200.5.6", "timestamp": "2026-07-03T09:25:00Z" },
+    { "id": "v25", "path": "/sales", "referrer": "https://instagram.com/", "ip": "41.200.5.6", "timestamp": "2026-07-03T09:28:44Z" },
+    { "id": "v26", "path": "/", "referrer": "direct", "ip": "196.200.12.33", "timestamp": "2026-07-02T15:00:00Z" },
+    { "id": "v27", "path": "/sales", "referrer": "direct", "ip": "196.200.12.33", "timestamp": "2026-07-02T15:05:00Z" }
+  ],
+  "clicks": [
+    { "id": "click_1", "email": "moussa.diop@gmail.com", "phone": "+221776543210", "source": "sales_page_cta", "timestamp": "2026-07-07T14:34:00Z" },
+    { "id": "click_2", "email": "awa.ndiaye@outlook.sn", "phone": "+221703210987", "source": "sales_page_cta", "timestamp": "2026-07-07T11:18:22Z" },
+    { "id": "click_3", "email": "koffi.yao@yahoo.fr", "phone": "+2250708091011", "source": "landing_modal_checkout_cta", "timestamp": "2026-07-07T08:46:10Z" },
+    { "id": "click_4", "email": "mt.gnamkey@gmail.com", "phone": "+2250544556677", "source": "sales_page_cta", "timestamp": "2026-07-06T20:12:30Z" },
+    { "id": "click_5", "email": "jp.ndong@gmail.com", "phone": "+24166223344", "source": "sales_page_cta", "timestamp": "2026-07-06T18:15:00Z" },
+    { "id": "click_6", "email": "saliou.diallo@hotmail.com", "phone": "+224622110044", "source": "landing_modal_checkout_cta", "timestamp": "2026-07-06T15:08:44Z" },
+    { "id": "click_7", "email": "m.ondoua@yahoo.fr", "phone": "+237699887766", "source": "sales_page_cta", "timestamp": "2026-07-05T22:42:00Z" },
+    { "id": "click_8", "email": "esther.eyama@gmail.com", "phone": "+237677553311", "source": "landing_modal_checkout_cta", "timestamp": "2026-07-05T19:18:10Z" }
+  ]
+}
