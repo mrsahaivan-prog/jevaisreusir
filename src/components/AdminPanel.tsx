@@ -16,7 +16,9 @@ import {
   Calendar,
   Eye,
   Check,
-  Play
+  Play,
+  Smartphone,
+  Link2
 } from "lucide-react";
 import { motion, AnimatePresence } from "motion/react";
 
@@ -36,8 +38,16 @@ interface Summary {
   totalLeads: number;
   totalClicks: number;
   totalVideoClicks: number;
+  videoPlays: number;
+  averageVideoProgress: number;
+  averageTimeOnPage: number;
   optInRate: number;
   conversionRate: number;
+  activeToday: number;
+  activeThisWeek: number;
+  activeThisMonth: number;
+  visitToPlayRate: number;
+  playToCtaRate: number;
 }
 
 interface CountryStat {
@@ -45,17 +55,41 @@ interface CountryStat {
   value: number;
 }
 
+interface ReferrerStat {
+  name: string;
+  value: number;
+}
+
+interface DeviceStat {
+  name: string;
+  value: number;
+}
+
 interface DailyLead {
   date: string;
   count: number;
+  visits: number;
+}
+
+interface WeekdayStat {
+  day: string;
+  rate: number;
+  leads: number;
+  visits: number;
 }
 
 interface AdminStats {
   summary: Summary;
   leads: Lead[];
+  recentVisits: any[];
   countryStats: CountryStat[];
+  referrerStats: ReferrerStat[];
+  deviceStats: DeviceStat[];
   dailyLeads: DailyLead[];
+  weekdayStats: WeekdayStat[];
+  ctaPerf: any;
   clicks: any[];
+  source: string;
 }
 
 interface AdminPanelProps {
@@ -418,96 +452,155 @@ export default function AdminPanel({ onBackToHome }: AdminPanelProps) {
 
         {/* 1. KPIs Cards Section */}
         {stats && (
-          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
-            {/* Visitors Card */}
-            <div className="bg-zinc-950/80 border border-white/5 rounded-2xl p-5 relative overflow-hidden">
-              <div className="absolute top-0 right-0 p-4 opacity-5">
-                <Users className="w-16 h-16 text-[#D4AF37]" />
+          <div className="space-y-6">
+            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
+              {/* Audience & Temps Moyen Card */}
+              <div className="bg-zinc-950/80 border border-white/5 rounded-2xl p-5 relative overflow-hidden">
+                <div className="absolute top-0 right-0 p-4 opacity-5">
+                  <Users className="w-16 h-16 text-[#D4AF37]" />
+                </div>
+                <p className="text-[10px] uppercase tracking-wider text-gray-500 font-extrabold">
+                  Visites & Audience
+                </p>
+                <h3 className="text-3xl font-black text-white font-display mt-2 leading-none">
+                  {stats.summary.totalVisits}
+                </h3>
+                <div className="flex flex-col gap-1 text-[10px] text-gray-400 mt-3 border-t border-white/5 pt-2">
+                  <div className="flex items-center justify-between">
+                    <span>Uniques:</span>
+                    <span className="text-emerald-400 font-bold">{stats.summary.uniqueVisitors}</span>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <span>Temps moyen:</span>
+                    <span className="text-amber-400 font-mono font-bold">{Math.round(stats.summary.averageTimeOnPage || 0)}s</span>
+                  </div>
+                </div>
               </div>
-              <p className="text-[10px] uppercase tracking-wider text-gray-500 font-extrabold">
-                Visites Totales
-              </p>
-              <h3 className="text-3xl font-black text-white font-display mt-2 leading-none">
-                {stats.summary.totalVisits}
-              </h3>
-              <div className="flex items-center gap-1.5 text-[10px] text-gray-400 mt-2">
-                <span className="text-emerald-400 font-bold">
-                  {stats.summary.uniqueVisitors}
-                </span>
-                <span>visiteurs uniques</span>
+
+              {/* Engagement Vidéo Card */}
+              <div className="bg-zinc-950/80 border border-white/5 rounded-2xl p-5 relative overflow-hidden">
+                <div className="absolute top-0 right-0 p-4 opacity-5">
+                  <Play className="w-16 h-16 text-cyan-400" />
+                </div>
+                <p className="text-[10px] uppercase tracking-wider text-gray-500 font-extrabold">
+                  Lectures Vidéo
+                </p>
+                <h3 className="text-3xl font-black text-cyan-400 font-display mt-2 leading-none">
+                  {stats.summary.videoPlays || 0}
+                </h3>
+                <div className="flex flex-col gap-1 text-[10px] text-gray-400 mt-3 border-t border-white/5 pt-2">
+                  <div className="flex items-center justify-between">
+                    <span>Visionnage moy:</span>
+                    <span className="text-cyan-400 font-bold">{Math.round(stats.summary.averageVideoProgress || 0)}%</span>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <span>Clics Bouton:</span>
+                    <span className="text-gray-300 font-bold">{stats.summary.totalVideoClicks || 0}</span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Leads Card */}
+              <div className="bg-zinc-950/80 border border-amber-500/10 rounded-2xl p-5 relative overflow-hidden">
+                <div className="absolute top-0 right-0 p-4 opacity-5">
+                  <Users className="w-16 h-16 text-amber-400" />
+                </div>
+                <p className="text-[10px] uppercase tracking-wider text-amber-500/70 font-extrabold">
+                  Inscriptions (Leads)
+                </p>
+                <h3 className="text-3xl font-black text-amber-400 font-display mt-2 leading-none">
+                  {stats.summary.totalLeads}
+                </h3>
+                <div className="flex flex-col gap-1 text-[10px] text-gray-400 mt-3 border-t border-amber-500/10 pt-2">
+                  <div className="flex items-center justify-between">
+                    <span>Taux de conversion:</span>
+                    <span className="text-amber-400 font-bold">{stats.summary.optInRate}%</span>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <span>Aujourd'hui:</span>
+                    <span className="text-gray-300 font-bold">{stats.dailyLeads?.[stats.dailyLeads.length - 1]?.count || 0}</span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Click Payments Card */}
+              <div className="bg-zinc-950/80 border border-white/5 rounded-2xl p-5 relative overflow-hidden">
+                <div className="absolute top-0 right-0 p-4 opacity-5">
+                  <MousePointerClick className="w-16 h-16 text-orange-500" />
+                </div>
+                <p className="text-[10px] uppercase tracking-wider text-gray-500 font-extrabold">
+                  Intention d'Achat
+                </p>
+                <h3 className="text-3xl font-black text-orange-400 font-display mt-2 leading-none">
+                  {stats.summary.totalClicks}
+                </h3>
+                <div className="flex flex-col gap-1 text-[10px] text-gray-400 mt-3 border-t border-white/5 pt-2">
+                  <div className="flex items-center justify-between">
+                    <span>Visiteurs à clics:</span>
+                    <span className="text-orange-400 font-bold">{stats.summary.conversionRate}%</span>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <span>Source Directe:</span>
+                    <span className="text-gray-300 font-bold">{stats.ctaPerf?.direct_checkout_cta || 0}</span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Active Users/Trafic Card */}
+              <div className="bg-gradient-to-br from-[#F27D26]/5 to-[#D4AF37]/5 border border-[#D4AF37]/20 rounded-2xl p-5 relative overflow-hidden col-span-2 md:col-span-1">
+                <div className="absolute top-0 right-0 p-4 opacity-10">
+                  <TrendingUp className="w-16 h-16 text-amber-400" />
+                </div>
+                <p className="text-[10px] uppercase tracking-wider text-amber-400 font-extrabold">
+                  Trafic Actif (Uniques)
+                </p>
+                <h3 className="text-3xl font-black text-transparent bg-clip-text bg-gradient-to-r from-amber-400 to-orange-500 font-display mt-2 leading-none">
+                  {stats.summary.activeToday || 0}
+                </h3>
+                <div className="flex flex-col gap-1 text-[10px] text-gray-400 mt-3 border-t border-amber-500/20 pt-2">
+                  <div className="flex items-center justify-between">
+                    <span>Cette semaine:</span>
+                    <span className="text-white font-bold">{stats.summary.activeThisWeek || 0}</span>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <span>Ce mois:</span>
+                    <span className="text-white font-bold">{stats.summary.activeThisMonth || 0}</span>
+                  </div>
+                </div>
               </div>
             </div>
 
-            {/* Video Clicks Card */}
-            <div className="bg-zinc-950/80 border border-white/5 rounded-2xl p-5 relative overflow-hidden">
-              <div className="absolute top-0 right-0 p-4 opacity-5">
-                <Play className="w-16 h-16 text-cyan-400" />
-              </div>
-              <p className="text-[10px] uppercase tracking-wider text-gray-500 font-extrabold">
-                Clics Vidéo
-              </p>
-              <h3 className="text-3xl font-black text-cyan-400 font-display mt-2 leading-none">
-                {stats.summary.totalVideoClicks || 0}
+            {/* CRO Conversion Funnel */}
+            <div className="bg-zinc-950/80 border border-white/5 rounded-2xl p-5">
+              <h3 className="text-xs uppercase tracking-wider text-gray-400 font-extrabold mb-4 flex items-center gap-2">
+                <TrendingUp className="w-4 h-4 text-[#D4AF37]" />
+                Entonnoir de Conversion Premium (CRO Funnel)
               </h3>
-              <div className="flex items-center gap-1.5 text-[10px] text-gray-400 mt-2">
-                <span>Taux de lecture :</span>
-                <span className="text-cyan-400 font-bold">
-                  {stats.summary.totalVisits > 0 ? Math.round(((stats.summary.totalVideoClicks || 0) / stats.summary.totalVisits) * 100) : 0}%
-                </span>
-              </div>
-            </div>
-
-            {/* Leads Card */}
-            <div className="bg-zinc-950/80 border border-amber-500/10 rounded-2xl p-5 relative overflow-hidden">
-              <div className="absolute top-0 right-0 p-4 opacity-5">
-                <Users className="w-16 h-16 text-amber-400" />
-              </div>
-              <p className="text-[10px] uppercase tracking-wider text-amber-500/70 font-extrabold">
-                Inscriptions (Leads)
-              </p>
-              <h3 className="text-3xl font-black text-amber-400 font-display mt-2 leading-none">
-                {stats.summary.totalLeads}
-              </h3>
-              <div className="flex items-center gap-1.5 text-[10px] text-gray-400 mt-2">
-                <span>Taux de conversion :</span>
-                <span className="text-amber-400 font-bold">
-                  {stats.summary.optInRate}%
-                </span>
-              </div>
-            </div>
-
-            {/* Click Payments Card */}
-            <div className="bg-zinc-950/80 border border-white/5 rounded-2xl p-5 relative overflow-hidden">
-              <div className="absolute top-0 right-0 p-4 opacity-5">
-                <MousePointerClick className="w-16 h-16 text-orange-500" />
-              </div>
-              <p className="text-[10px] uppercase tracking-wider text-gray-500 font-extrabold">
-                Clics Paiement
-              </p>
-              <h3 className="text-3xl font-black text-white font-display mt-2 leading-none">
-                {stats.summary.totalClicks}
-              </h3>
-              <div className="flex items-center gap-1.5 text-[10px] text-gray-400 mt-2">
-                <span>Intention d'achat :</span>
-                <span className="text-orange-400 font-bold">
-                  {stats.summary.conversionRate}%
-                </span>
-              </div>
-            </div>
-
-            {/* Overall Conversion Card */}
-            <div className="bg-gradient-to-br from-amber-500/5 to-orange-500/5 border border-amber-500/20 rounded-2xl p-5 relative overflow-hidden col-span-2 md:col-span-1">
-              <div className="absolute top-0 right-0 p-4 opacity-10">
-                <TrendingUp className="w-16 h-16 text-amber-400" />
-              </div>
-              <p className="text-[10px] uppercase tracking-wider text-amber-400 font-extrabold">
-                Score d'Efficacité
-              </p>
-              <h3 className="text-3xl font-black text-transparent bg-clip-text bg-gradient-to-r from-amber-400 to-orange-500 font-display mt-2 leading-none">
-                {stats.summary.totalVisits > 0 ? Math.round((stats.summary.totalClicks / stats.summary.totalVisits) * 100) : 0}%
-              </h3>
-              <div className="flex items-center gap-1.5 text-[10px] text-gray-400 mt-2">
-                <span>Visiteurs à Clic-Paiement</span>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div className="bg-zinc-900/50 p-4 rounded-xl border border-white/5 relative">
+                  <span className="absolute -top-2 -left-2 bg-zinc-800 text-gray-400 text-[10px] w-5 h-5 rounded-full flex items-center justify-center font-bold">1</span>
+                  <p className="text-[10px] uppercase text-gray-500 font-bold">Visite → Lecture Vidéo</p>
+                  <p className="text-xl font-black text-cyan-400 mt-1">{stats.summary.visitToPlayRate}%</p>
+                  <div className="w-full bg-white/5 h-1.5 rounded-full mt-2 overflow-hidden">
+                    <div className="bg-gradient-to-r from-cyan-600 to-cyan-400 h-full" style={{ width: `${stats.summary.visitToPlayRate}%` }} />
+                  </div>
+                </div>
+                <div className="bg-zinc-900/50 p-4 rounded-xl border border-white/5 relative">
+                  <span className="absolute -top-2 -left-2 bg-zinc-800 text-gray-400 text-[10px] w-5 h-5 rounded-full flex items-center justify-center font-bold">2</span>
+                  <p className="text-[10px] uppercase text-gray-500 font-bold">Lecture → Clic CTA "Rejoindre"</p>
+                  <p className="text-xl font-black text-orange-400 mt-1">{stats.summary.playToCtaRate}%</p>
+                  <div className="w-full bg-white/5 h-1.5 rounded-full mt-2 overflow-hidden">
+                    <div className="bg-gradient-to-r from-orange-600 to-orange-400 h-full" style={{ width: `${stats.summary.playToCtaRate}%` }} />
+                  </div>
+                </div>
+                <div className="bg-zinc-900/50 p-4 rounded-xl border border-white/5 relative">
+                  <span className="absolute -top-2 -left-2 bg-zinc-800 text-gray-400 text-[10px] w-5 h-5 rounded-full flex items-center justify-center font-bold">3</span>
+                  <p className="text-[10px] uppercase text-gray-500 font-bold">Visite → Inscription validée</p>
+                  <p className="text-xl font-black text-emerald-400 mt-1">{stats.summary.optInRate}%</p>
+                  <div className="w-full bg-white/5 h-1.5 rounded-full mt-2 overflow-hidden">
+                    <div className="bg-gradient-to-r from-emerald-600 to-emerald-400 h-full" style={{ width: `${stats.summary.optInRate}%` }} />
+                  </div>
+                </div>
               </div>
             </div>
           </div>
@@ -609,6 +702,142 @@ export default function AdminPanel({ onBackToHome }: AdminPanelProps) {
                       </div>
                     );
                   })}
+                </div>
+              )}
+            </div>
+          </div>
+        )}
+
+        {/* 2.5. Advanced Traffic breakdowns (Device, Referrer, Weekday & Recent Visitors) */}
+        {stats && (
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            {/* Device breakdown & Traffic Channels */}
+            <div className="bg-zinc-950/80 border border-white/5 rounded-2xl p-6 space-y-6">
+              {/* Devices */}
+              <div className="space-y-4">
+                <h3 className="text-sm font-bold tracking-wide uppercase text-white flex items-center gap-2">
+                  <Smartphone className="w-4 h-4 text-cyan-400" />
+                  Terminaux & Appareils
+                </h3>
+                {!stats.deviceStats || stats.deviceStats.length === 0 ? (
+                  <p className="text-xs text-gray-500">Aucun terminal enregistré.</p>
+                ) : (
+                  <div className="space-y-3">
+                    {stats.deviceStats.map((device, idx) => {
+                      const totalDevices = stats.summary.totalVisits || 1;
+                      const pct = Math.round((device.value / totalDevices) * 100);
+                      return (
+                        <div key={idx} className="space-y-1">
+                          <div className="flex justify-between text-xs text-gray-400">
+                            <span className="capitalize">{device.name}</span>
+                            <span className="font-bold text-white">{pct}%</span>
+                          </div>
+                          <div className="w-full h-1.5 bg-white/5 rounded-full overflow-hidden">
+                            <div className="h-full bg-cyan-500 rounded-full" style={{ width: `${pct}%` }} />
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
+
+              {/* Referrers */}
+              <div className="space-y-4 pt-4 border-t border-white/5">
+                <h3 className="text-sm font-bold tracking-wide uppercase text-white flex items-center gap-2">
+                  <Link2 className="w-4 h-4 text-orange-400" />
+                  Canaux de Provenance
+                </h3>
+                {!stats.referrerStats || stats.referrerStats.length === 0 ? (
+                  <p className="text-xs text-gray-500">Aucune provenance enregistrée.</p>
+                ) : (
+                  <div className="space-y-3">
+                    {stats.referrerStats.map((ref, idx) => {
+                      const totalRefs = stats.summary.totalVisits || 1;
+                      const pct = Math.round((ref.value / totalRefs) * 100);
+                      return (
+                        <div key={idx} className="space-y-1">
+                          <div className="flex justify-between text-xs text-gray-400">
+                            <span className="truncate max-w-[150px]">{ref.name}</span>
+                            <span className="font-bold text-white">{pct}%</span>
+                          </div>
+                          <div className="w-full h-1.5 bg-white/5 rounded-full overflow-hidden">
+                            <div className="h-full bg-orange-500 rounded-full" style={{ width: `${pct}%` }} />
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* Weekday Performance / Conversion optimization */}
+            <div className="bg-zinc-950/80 border border-white/5 rounded-2xl p-6 space-y-4">
+              <h3 className="text-sm font-bold tracking-wide uppercase text-white flex items-center gap-2">
+                <TrendingUp className="w-4 h-4 text-amber-400" />
+                Performance par jour de la semaine
+              </h3>
+              <p className="text-[11px] text-gray-500 leading-normal">
+                Découvrez les jours de la semaine enregistrant les meilleurs taux de conversion (visites en inscriptions).
+              </p>
+
+              {!stats.weekdayStats || stats.weekdayStats.length === 0 ? (
+                <div className="py-12 text-center text-xs text-gray-500">
+                  Pas assez de données pour l'analyse hebdomadaire.
+                </div>
+              ) : (
+                <div className="space-y-3.5 pt-2">
+                  {stats.weekdayStats.map((w, idx) => (
+                    <div key={idx} className="flex items-center justify-between text-xs">
+                      <span className="font-semibold text-gray-300 w-20">{w.day}</span>
+                      <div className="flex-1 mx-3 flex items-center gap-2">
+                        <div className="flex-1 h-2 bg-white/5 rounded-full overflow-hidden">
+                          <div className="h-full bg-amber-400 rounded-full" style={{ width: `${w.rate}%` }} />
+                        </div>
+                        <span className="text-[10px] text-gray-400 w-8 text-right font-mono font-bold">{w.rate}%</span>
+                      </div>
+                      <span className="text-[10px] text-gray-500 w-16 text-right font-mono">
+                        {w.leads} lead{w.leads > 1 ? 's' : ''}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            {/* Recent visitors mini table log */}
+            <div className="bg-zinc-950/80 border border-white/5 rounded-2xl p-6 space-y-4">
+              <h3 className="text-sm font-bold tracking-wide uppercase text-white flex items-center gap-2">
+                <Eye className="w-4 h-4 text-[#D4AF37]" />
+                Journal des Visiteurs Récents
+              </h3>
+              
+              {!stats.recentVisits || stats.recentVisits.length === 0 ? (
+                <p className="text-xs text-gray-500 py-12 text-center">Aucun visiteur récent.</p>
+              ) : (
+                <div className="space-y-3 max-h-[300px] overflow-y-auto pr-1">
+                  {stats.recentVisits.slice(0, 12).map((visit, idx) => (
+                    <div key={idx} className="bg-white/[0.01] border border-white/5 rounded-xl p-2.5 flex items-center justify-between text-[11px]">
+                      <div className="space-y-0.5">
+                        <div className="flex items-center gap-1.5">
+                          <span className="font-bold text-gray-300 truncate max-w-[80px]" title={visit.visitor_id}>
+                            {visit.visitor_id?.substring(0, 8) || "visiteur"}
+                          </span>
+                          <span className="text-[9px] px-1.5 py-0.5 bg-white/5 rounded border border-white/10 uppercase font-bold text-gray-400">
+                            {visit.device_type || "pc"}
+                          </span>
+                        </div>
+                        <p className="text-[9px] text-gray-500 font-mono truncate max-w-[120px]">
+                          Origine: {visit.referrer || "direct"}
+                        </p>
+                      </div>
+                      <div className="text-right space-y-0.5">
+                        <p className="font-bold text-amber-400">{visit.duration || 0}s actif</p>
+                        <p className="text-[9px] text-gray-500">{new Date(visit.timestamp).toLocaleTimeString()}</p>
+                      </div>
+                    </div>
+                  ))}
                 </div>
               )}
             </div>

@@ -203,16 +203,49 @@ export default function App() {
     }
   }, [view]);
 
-  // Track page visit on mount
+  // Helper to retrieve or generate a unique visitor ID
+  const getOrCreateVisitorId = () => {
+    let id = localStorage.getItem("mz_visitor_id");
+    if (!id) {
+      id = "usr_" + Math.random().toString(36).substring(2, 11) + Date.now().toString(36);
+      localStorage.setItem("mz_visitor_id", id);
+    }
+    return id;
+  };
+
+  // Track page visit on mount & launch active duration heartbeats
   useEffect(() => {
+    const visitorId = getOrCreateVisitorId();
+    const width = window.innerWidth;
+    const deviceType = width < 768 ? "mobile" : width < 1024 ? "tablet" : "desktop";
+
+    // Track initial page visit details
     fetch("/api/visits", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
+        visitorId,
         path: window.location.pathname,
-        referrer: document.referrer || "direct"
+        referrer: document.referrer || "direct",
+        deviceType,
+        userAgent: navigator.userAgent,
+        country: "Inconnu",
+        countryCode: ""
       })
     }).catch((err) => console.error("Error tracking visit:", err));
+
+    // Keep page session duration updated with 10-second heartbeats
+    const interval = setInterval(() => {
+      if (document.visibilityState === "visible") {
+        fetch("/api/visits/duration", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ visitorId, duration: 10 })
+        }).catch(() => {});
+      }
+    }, 10000);
+
+    return () => clearInterval(interval);
   }, []);
   const [isPlaying, setIsPlaying] = useState(false);
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -244,6 +277,15 @@ export default function App() {
   // Countdown Timer states for CTA
   const [secondsLeft, setSecondsLeft] = useState(30);
   const [timerStarted, setTimerStarted] = useState(false);
+  const [delayedMoveStarted, setDelayedMoveStarted] = useState(false);
+
+  // Trigger delayed movement after 10 seconds of page load
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDelayedMoveStarted(true);
+    }, 10000);
+    return () => clearTimeout(timer);
+  }, []);
 
   // Pricing urgency countdown timer
   const [timeLeft, setTimeLeft] = useState<{
@@ -353,12 +395,24 @@ export default function App() {
     setIsPlaying(true);
     setTimerStarted(true);
     
-    // Track video click in database
+    const visitorId = getOrCreateVisitorId();
+    
+    // Track video click in database using the unified events endpoint
+    fetch("/api/events", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        visitorId,
+        eventType: "click_watch_video",
+        eventValue: 1
+      })
+    }).catch((err) => console.error("Error tracking video event click:", err));
+    
     fetch("/api/video-clicks", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ source: "watch_video_cta" })
-    }).catch((err) => console.error("Error tracking video click:", err));
+    }).catch(() => {});
     
     // Give a brief moment for layout/render updates, then scroll with high precision
     setTimeout(() => {
@@ -443,6 +497,7 @@ export default function App() {
 
       // Save to server-side database for admin panel stats
       try {
+        const visitorId = getOrCreateVisitorId();
         await fetch("/api/leads", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -451,7 +506,8 @@ export default function App() {
             email,
             phone,
             country: selectedCountry.name,
-            countryCode: selectedCountry.flag
+            countryCode: selectedCountry.flag,
+            visitorId
           })
         });
       } catch (err) {
@@ -480,6 +536,7 @@ export default function App() {
   // Open registration redirect directly
   const openRegistrationModal = () => {
     const targetUrl = "https://mzplus.mychariow.shop/prd_knd1e076";
+    const visitorId = getOrCreateVisitorId();
     
     // Log the click event to our database for admin analytics
     fetch("/api/leads", {
@@ -490,9 +547,22 @@ export default function App() {
         email: "direct_checkout@chariow.shop",
         phone: "Direct",
         country: selectedCountry.name,
-        countryCode: selectedCountry.flag
+        countryCode: selectedCountry.flag,
+        visitorId
       })
     }).catch((err) => console.error("Failed to log redirect click:", err));
+
+    // Track checkout click event
+    fetch("/api/clicks", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        email: "direct_checkout@chariow.shop",
+        phone: "Direct",
+        source: "direct_checkout_cta",
+        visitorId
+      })
+    }).catch(() => {});
 
     try {
       window.location.href = targetUrl;
@@ -727,17 +797,29 @@ export default function App() {
           transition={{ duration: 0.8, delay: 0.4 }}
           className="flex justify-center"
         >
-          <button
+          <motion.button
             onClick={handleWatchVideo}
             id="btn_watch_video_hero"
-            className="group relative px-6 py-3 bg-gradient-to-r from-[#D4AF37] to-[#F27D26] rounded-full flex items-center justify-center gap-3 text-black font-bold text-xs sm:text-sm md:text-base shadow-[0_10px_30px_rgba(242,125,38,0.3)] cursor-pointer hover:scale-105 active:scale-95 transition-all duration-300"
+            animate={{ 
+              scale: [1, 1.03, 1],
+              rotate: [0, -12, 10, -12, 10, -8, 8, -4, 4, 0, 0]
+            }}
+            transition={{ 
+              repeat: Infinity, 
+              duration: 2.2, 
+              ease: "easeInOut",
+              times: [0, 0.05, 0.1, 0.15, 0.2, 0.25, 0.3, 0.35, 0.4, 0.45, 1]
+            }}
+            whileHover={{ scale: 1.08 }}
+            whileTap={{ scale: 0.95 }}
+            className="group relative px-6 py-3 bg-gradient-to-r from-[#D4AF37] to-[#F27D26] rounded-full flex items-center justify-center gap-3 text-black font-bold text-xs sm:text-sm md:text-base shadow-[0_10px_35px_rgba(242,125,38,0.4)] cursor-pointer transition-all duration-300"
           >
             <span className="w-6 h-6 sm:w-7 sm:h-7 bg-black rounded-full flex items-center justify-center flex-shrink-0">
               <Play className="w-2.5 h-2.5 sm:w-3 text-[#F27D26] fill-[#F27D26] ml-0.5" />
             </span>
             <span className="tracking-wide">Regarder la vidéo</span>
             <ArrowRight className="w-4 h-4 text-black group-hover:translate-x-1.5 transition-transform" />
-          </button>
+          </motion.button>
         </motion.div>
 
       </section>
@@ -848,6 +930,30 @@ export default function App() {
                 onEnded={() => {
                   setIsPlaying(false);
                 }}
+                onPlay={() => {
+                  const visitorId = getOrCreateVisitorId();
+                  fetch("/api/events", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({
+                      visitorId,
+                      eventType: "play_video",
+                      eventValue: 1
+                    })
+                  }).catch(() => {});
+                }}
+                onProgress={(percent) => {
+                  const visitorId = getOrCreateVisitorId();
+                  fetch("/api/events", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({
+                      visitorId,
+                      eventType: "video_progress",
+                      eventValue: percent
+                    })
+                  }).catch(() => {});
+                }}
               />
             </div>
           </div>
@@ -873,8 +979,22 @@ export default function App() {
                 }}
                 id="btn_rejoindre_mz_cta"
                 initial={{ scale: 0.95 }}
-                animate={{ scale: [1, 1.04, 1], boxShadow: ["0 4px 15px rgba(242,125,38,0.25)", "0 4px 35px rgba(242,125,38,0.6)", "0 4px 15px rgba(242,125,38,0.25)"] }}
-                transition={{ repeat: Infinity, duration: 1.8, ease: "easeInOut" }}
+                animate={delayedMoveStarted ? {
+                  scale: [1, 1.03, 1],
+                  rotate: [0, -12, 10, -12, 10, -8, 8, -4, 4, 0, 0],
+                  boxShadow: ["0 4px 15px rgba(242,125,38,0.25)", "0 4px 35px rgba(242,125,38,0.6)", "0 4px 15px rgba(242,125,38,0.25)"]
+                } : { 
+                  scale: 1,
+                  y: 0,
+                  rotate: 0,
+                  boxShadow: "0 4px 15px rgba(242,125,38,0.2)"
+                }}
+                transition={delayedMoveStarted ? { 
+                  repeat: Infinity, 
+                  duration: 2.2, 
+                  ease: "easeInOut",
+                  times: [0, 0.05, 0.1, 0.15, 0.2, 0.25, 0.3, 0.35, 0.4, 0.45, 1]
+                } : { duration: 0.3 }}
                 className="group relative w-full py-4.5 bg-gradient-to-r from-[#D4AF37] to-[#F27D26] hover:scale-[1.03] active:scale-[0.98] text-black font-extrabold text-xs sm:text-sm rounded-full cursor-pointer flex items-center justify-between px-6 transition-all duration-300 font-display"
               >
                 <Sparkles className="w-4 h-4 text-black fill-black flex-shrink-0" />
@@ -959,8 +1079,17 @@ export default function App() {
             <motion.button
               onClick={openRegistrationModal}
               initial={{ scale: 1 }}
-              animate={{ scale: [1, 1.04, 1], boxShadow: ["0 4px 20px rgba(212,175,55,0.25)", "0 4px 35px rgba(212,175,55,0.6)", "0 4px 20px rgba(212,175,55,0.25)"] }}
-              transition={{ repeat: Infinity, duration: 1.8, ease: "easeInOut" }}
+              animate={{ 
+                scale: [1, 1.03, 1],
+                rotate: [0, -12, 10, -12, 10, -8, 8, -4, 4, 0, 0],
+                boxShadow: ["0 4px 20px rgba(212,175,55,0.25)", "0 4px 35px rgba(212,175,55,0.6)", "0 4px 20px rgba(212,175,55,0.25)"]
+              }}
+              transition={{ 
+                repeat: Infinity, 
+                duration: 2.2, 
+                ease: "easeInOut",
+                times: [0, 0.05, 0.1, 0.15, 0.2, 0.25, 0.3, 0.35, 0.4, 0.45, 1]
+              }}
               whileHover={{ scale: 1.05 }}
               whileTap={{ scale: 0.98 }}
               className="w-full py-3.5 bg-gradient-to-r from-yellow-400 via-[#D4AF37] to-amber-500 hover:brightness-110 text-black font-black text-xs sm:text-sm rounded-xl flex flex-col items-center justify-center gap-0.5 px-4 transition-all duration-300 font-display cursor-pointer"
@@ -1320,8 +1449,17 @@ export default function App() {
           <motion.button
             onClick={openRegistrationModal}
             initial={{ scale: 1 }}
-            animate={{ scale: [1, 1.04, 1], boxShadow: ["0 4px 20px rgba(212,175,55,0.25)", "0 4px 35px rgba(212,175,55,0.6)", "0 4px 20px rgba(212,175,55,0.25)"] }}
-            transition={{ repeat: Infinity, duration: 1.8, ease: "easeInOut" }}
+            animate={{ 
+              scale: [1, 1.03, 1],
+              rotate: [0, -12, 10, -12, 10, -8, 8, -4, 4, 0, 0],
+              boxShadow: ["0 4px 20px rgba(212,175,55,0.25)", "0 4px 35px rgba(212,175,55,0.6)", "0 4px 20px rgba(212,175,55,0.25)"]
+            }}
+            transition={{ 
+              repeat: Infinity, 
+              duration: 2.2, 
+              ease: "easeInOut",
+              times: [0, 0.05, 0.1, 0.15, 0.2, 0.25, 0.3, 0.35, 0.4, 0.45, 1]
+            }}
             whileHover={{ scale: 1.05 }}
             whileTap={{ scale: 0.98 }}
             className="w-full py-4 bg-gradient-to-r from-yellow-400 via-[#D4AF37] to-amber-500 hover:brightness-110 text-black font-black text-xs sm:text-sm rounded-xl flex flex-col items-center justify-center gap-0.5 px-4 transition-all duration-300 font-display cursor-pointer"

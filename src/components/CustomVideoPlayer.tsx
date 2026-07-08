@@ -7,16 +7,23 @@ interface CustomVideoPlayerProps {
   isPlaying: boolean;
   onPlayStateChange?: (playing: boolean) => void;
   onEnded?: () => void;
+  onPlay?: () => void;
+  onProgress?: (percent: number) => void;
 }
 
 export const CustomVideoPlayer: React.FC<CustomVideoPlayerProps> = ({
   isPlaying: parentIsPlaying,
   onPlayStateChange,
   onEnded,
+  onPlay,
+  onProgress,
 }) => {
   const containerRef = useRef<HTMLDivElement>(null);
   const iframeRef = useRef<HTMLIFrameElement>(null);
   const playerRef = useRef<Player | null>(null);
+
+  // Keep track of which progress thresholds have already been reported in this session
+  const sentThresholds = useRef<Set<number>>(new Set());
 
   // Player state
   const [isPlaying, setIsPlaying] = useState(false);
@@ -114,6 +121,7 @@ export const CustomVideoPlayer: React.FC<CustomVideoPlayerProps> = ({
     player.on("play", () => {
       setIsPlaying(true);
       onPlayStateChange?.(true);
+      onPlay?.();
       resetControlsTimeout();
     });
 
@@ -131,9 +139,20 @@ export const CustomVideoPlayer: React.FC<CustomVideoPlayerProps> = ({
 
     player.on("timeupdate", (data) => {
       setCurrentTime(data.seconds);
+      const activeDuration = data.duration || duration || 1;
       if (data.duration) {
         setDuration(data.duration);
       }
+
+      // Track watch percentage thresholds
+      const percentage = Math.round((data.seconds / activeDuration) * 100);
+      const thresholds = [10, 25, 50, 75, 90, 100];
+      thresholds.forEach((t) => {
+        if (percentage >= t && !sentThresholds.current.has(t)) {
+          sentThresholds.current.add(t);
+          onProgress?.(t);
+        }
+      });
     });
 
     player.on("loaded", () => {
