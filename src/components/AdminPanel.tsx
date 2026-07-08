@@ -48,6 +48,9 @@ interface Summary {
   activeThisMonth: number;
   visitToPlayRate: number;
   playToCtaRate: number;
+  clicksToday?: number;
+  registrationRedirectRate?: number;
+  redirectedUniqueCount?: number;
 }
 
 interface CountryStat {
@@ -90,6 +93,14 @@ interface AdminStats {
   ctaPerf: any;
   clicks: any[];
   source: string;
+  dailyClicks?: Array<{ date: string; count: number }>;
+  clicksToday?: number;
+  ctaBreakdown?: {
+    watchVideoClicks: number;
+    directCheckoutClicks: number;
+    formSubmissions: number;
+    modalCheckoutClicks: number;
+  };
 }
 
 interface AdminPanelProps {
@@ -602,6 +613,195 @@ export default function AdminPanel({ onBackToHome }: AdminPanelProps) {
                   </div>
                 </div>
               </div>
+            </div>
+
+            {/* Suivi Avancé des Clics & Taux de Redirection */}
+            <div className="bg-zinc-950/80 border border-white/5 rounded-2xl p-6 space-y-6">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-white/5 pb-4">
+                <div>
+                  <h3 className="text-sm font-bold tracking-wide uppercase text-white flex items-center gap-2">
+                    <MousePointerClick className="w-4 h-4 text-amber-400" />
+                    Analyses des Clics CTA & Taux d'Inscription
+                  </h3>
+                  <p className="text-xs text-gray-500 mt-1">
+                    Statistiques de conversion en temps réel basées sur les actions des visiteurs.
+                  </p>
+                </div>
+                <div className="flex items-center gap-2 bg-amber-500/10 border border-amber-500/20 px-3 py-1.5 rounded-xl">
+                  <span className="w-2 h-2 bg-amber-400 rounded-full animate-ping" />
+                  <span className="text-[11px] font-bold text-amber-300 uppercase tracking-wider">
+                    Clics Aujourd'hui : {stats.clicksToday ?? stats.summary.clicksToday ?? 0}
+                  </span>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                
+                {/* Left side: Specific CTA counters */}
+                <div className="lg:col-span-2 space-y-4">
+                  <h4 className="text-[11px] font-extrabold uppercase tracking-widest text-gray-400">
+                    Nombre de clics par bouton d'appel à l'action (CTA)
+                  </h4>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    
+                    {/* CTA 1: Regarder la Vidéo */}
+                    <div className="bg-zinc-900/40 border border-white/5 p-4 rounded-xl flex items-start gap-3">
+                      <div className="p-2 bg-cyan-500/10 text-cyan-400 rounded-lg">
+                        <Play className="w-5 h-5" />
+                      </div>
+                      <div className="space-y-1 flex-1">
+                        <p className="text-xs font-bold text-gray-300">Bouton "Regarder la Vidéo"</p>
+                        <p className="text-[10px] text-gray-500 font-light">
+                          Déclenchements de la vidéo d'explication.
+                        </p>
+                        <div className="flex items-baseline gap-1.5 pt-1">
+                          <span className="text-lg font-black text-white">
+                            {stats.ctaBreakdown?.watchVideoClicks ?? stats.ctaPerf?.watchVideoClicks ?? 0}
+                          </span>
+                          <span className="text-[9px] text-gray-500 font-bold uppercase">clics</span>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* CTA 2: Accès Direct */}
+                    <div className="bg-zinc-900/40 border border-white/5 p-4 rounded-xl flex items-start gap-3">
+                      <div className="p-2 bg-orange-500/10 text-orange-400 rounded-lg">
+                        <Link2 className="w-5 h-5" />
+                      </div>
+                      <div className="space-y-1 flex-1">
+                        <p className="text-xs font-bold text-gray-300">Bouton "Rejoindre MZ+" (Accès Direct)</p>
+                        <p className="text-[10px] text-gray-500 font-light">
+                          Redirections directes sans passer par le formulaire d'inscription.
+                        </p>
+                        <div className="flex items-baseline gap-1.5 pt-1">
+                          <span className="text-lg font-black text-white">
+                            {stats.ctaBreakdown?.directCheckoutClicks ?? stats.ctaPerf?.direct_checkout_cta ?? 0}
+                          </span>
+                          <span className="text-[9px] text-gray-500 font-bold uppercase">clics</span>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* CTA 3: Form Leads Submission */}
+                    <div className="bg-zinc-900/40 border border-white/5 p-4 rounded-xl flex items-start gap-3">
+                      <div className="p-2 bg-amber-500/10 text-amber-400 rounded-lg">
+                        <Users className="w-5 h-5" />
+                      </div>
+                      <div className="space-y-1 flex-1">
+                        <p className="text-xs font-bold text-gray-300">Inscriptions Formulaire</p>
+                        <p className="text-[10px] text-gray-500 font-light">
+                          Prospects ayant validé leur nom, email et téléphone.
+                        </p>
+                        <div className="flex items-baseline gap-1.5 pt-1">
+                          <span className="text-lg font-black text-white">
+                            {stats.ctaBreakdown?.formSubmissions ?? stats.ctaPerf?.formSubmissions ?? 0}
+                          </span>
+                          <span className="text-[9px] text-gray-500 font-bold uppercase">prospects</span>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* CTA 4: Modal Payment Checkouts */}
+                    <div className="bg-zinc-900/40 border border-white/5 p-4 rounded-xl flex items-start gap-3">
+                      <div className="p-2 bg-emerald-500/10 text-emerald-400 rounded-lg">
+                        <Check className="w-5 h-5" />
+                      </div>
+                      <div className="space-y-1 flex-1">
+                        <p className="text-xs font-bold text-gray-300">Bouton "Paiement Sécurisé"</p>
+                        <p className="text-[10px] text-gray-500 font-light">
+                          Clics finaux sur le bouton de paiement sécurisé après formulaire.
+                        </p>
+                        <div className="flex items-baseline gap-1.5 pt-1">
+                          <span className="text-lg font-black text-white">
+                            {stats.ctaBreakdown?.modalCheckoutClicks ?? stats.ctaPerf?.landing_modal_checkout_cta ?? 0}
+                          </span>
+                          <span className="text-[9px] text-gray-500 font-bold uppercase">clics</span>
+                        </div>
+                      </div>
+                    </div>
+
+                  </div>
+                </div>
+
+                {/* Right side: Conversion Rate to Signup Page */}
+                <div className="bg-zinc-900/20 border border-white/5 p-5 rounded-2xl flex flex-col justify-between space-y-4">
+                  <div className="space-y-2">
+                    <h4 className="text-[11px] font-extrabold uppercase tracking-widest text-gray-400">
+                      Taux d'Utilisateurs Redirigés
+                    </h4>
+                    <p className="text-xs text-gray-500 leading-relaxed font-light font-display">
+                      Pourcentage de visiteurs uniques redirigés vers la page d'inscription (via accès direct ou modal de paiement).
+                    </p>
+                  </div>
+
+                  <div className="space-y-3 py-2">
+                    <div className="flex justify-between items-baseline">
+                      <span className="text-4xl font-black text-transparent bg-clip-text bg-gradient-to-r from-amber-400 to-orange-500">
+                        {stats.summary.registrationRedirectRate ?? 0}%
+                      </span>
+                      <span className="text-[10px] text-gray-400 font-bold uppercase font-mono">
+                        {stats.summary.redirectedUniqueCount ?? 0} / {stats.summary.uniqueVisitors} visiteurs
+                      </span>
+                    </div>
+
+                    <div className="w-full h-3 bg-white/5 rounded-full overflow-hidden border border-white/5">
+                      <div 
+                        className="h-full bg-gradient-to-r from-orange-500 via-[#F27D26] to-[#D4AF37] rounded-full transition-all"
+                        style={{ width: `${stats.summary.registrationRedirectRate ?? 0}%` }}
+                      />
+                    </div>
+                  </div>
+
+                  <div className="bg-white/[0.01] border border-white/5 rounded-xl p-3 text-[10px] text-gray-400 leading-relaxed">
+                    💡 <span className="font-semibold text-gray-300">Taux élevé</span> signifie une excellente réactivité de l'audience aux boutons d'inscription directe et aux formulaires de capture d'informations.
+                  </div>
+                </div>
+
+              </div>
+
+              {/* Day-by-day Clicks Chart */}
+              {stats.dailyClicks && stats.dailyClicks.length > 0 && (
+                <div className="border-t border-white/5 pt-6 space-y-4">
+                  <div className="flex items-center justify-between">
+                    <h4 className="text-[11px] font-extrabold uppercase tracking-widest text-gray-400 flex items-center gap-1.5">
+                      <Calendar className="w-3.5 h-3.5 text-[#D4AF37]" />
+                      Évolution des Clics CTA par Jour (14 derniers jours)
+                    </h4>
+                    <span className="text-[10px] text-gray-400 bg-white/5 px-2.5 py-1 rounded-md border border-white/10 font-bold">
+                      Tendance Clics
+                    </span>
+                  </div>
+
+                  {/* Horizontal visual chart bars */}
+                  <div className="h-28 flex items-end justify-between gap-1 sm:gap-2 pt-2">
+                    {stats.dailyClicks.map((day, idx) => {
+                      const maxClicks = Math.max(...(stats.dailyClicks?.map(d => d.count) || [1]), 1);
+                      const heightPercent = Math.round((day.count / maxClicks) * 100);
+                      
+                      return (
+                        <div key={idx} className="flex-1 flex flex-col items-center group relative">
+                          <div className="absolute bottom-full mb-1.5 bg-zinc-900 border border-amber-500/20 text-[9px] font-mono text-amber-400 px-1.5 py-0.5 rounded shadow-lg opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap z-30">
+                            {day.count} clic{day.count > 1 ? 's' : ''}
+                          </div>
+                          <div className="w-full bg-white/[0.02] group-hover:bg-white/[0.04] rounded-t h-full flex items-end overflow-hidden transition-colors">
+                            <motion.div
+                              initial={{ height: 0 }}
+                              animate={{ height: `${heightPercent}%` }}
+                              transition={{ delay: idx * 0.02, duration: 0.4 }}
+                              className="w-full bg-gradient-to-t from-orange-600 to-amber-400 rounded-t relative"
+                            >
+                              <div className="absolute inset-x-0 top-0 h-px bg-white/30" />
+                            </motion.div>
+                          </div>
+                          <span className="text-[7px] sm:text-[8px] font-bold text-gray-500 mt-1.5 block tracking-tighter font-mono">
+                            {day.date.substring(5)}
+                          </span>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
             </div>
           </div>
         )}

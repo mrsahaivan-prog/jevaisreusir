@@ -177,29 +177,52 @@ export default function App() {
   const ctaSectionRef = useRef<HTMLDivElement>(null);
 
   // States
-  const [view, setView] = useState<'landing' | 'admin'>('landing');
+  const [view, setView] = useState<'landing' | 'admin'>(() => {
+    if (typeof window === "undefined") return "landing";
+    const isPathAdmin = window.location.pathname === "/admin";
+    const isHashAdmin = window.location.hash === "#/admin" || window.location.hash === "#admin";
+    const isQueryAdmin = window.location.search.includes("page=admin") || window.location.search.includes("admin=true");
+    return (isPathAdmin || isHashAdmin || isQueryAdmin) ? "admin" : "landing";
+  });
 
   // Synchronize URL path with React state for /admin routing
   useEffect(() => {
     const handlePathChange = () => {
-      if (window.location.pathname === "/admin") {
+      const isPathAdmin = window.location.pathname === "/admin";
+      const isHashAdmin = window.location.hash === "#/admin" || window.location.hash === "#admin";
+      const isQueryAdmin = window.location.search.includes("page=admin") || window.location.search.includes("admin=true");
+      
+      if (isPathAdmin || isHashAdmin || isQueryAdmin) {
         setView("admin");
       } else {
         setView("landing");
       }
     };
     
+    // Check path on mount or updates
     handlePathChange();
     window.addEventListener("popstate", handlePathChange);
-    return () => window.removeEventListener("popstate", handlePathChange);
+    window.addEventListener("hashchange", handlePathChange);
+    return () => {
+      window.removeEventListener("popstate", handlePathChange);
+      window.removeEventListener("hashchange", handlePathChange);
+    };
   }, []);
 
   useEffect(() => {
     const currentPath = window.location.pathname;
-    if (view === "admin" && currentPath !== "/admin") {
-      window.history.pushState({}, "", "/admin");
-    } else if (view === "landing" && currentPath !== "/" && currentPath !== "") {
-      window.history.pushState({}, "", "/");
+    const currentHash = window.location.hash;
+    const currentSearch = window.location.search;
+    
+    if (view === "admin") {
+      const hasAdminIndicator = currentHash === "#/admin" || currentHash === "#admin" || currentSearch.includes("page=admin") || currentSearch.includes("admin=true");
+      if (!hasAdminIndicator && currentPath !== "/admin") {
+        window.history.pushState({}, "", "/admin");
+      }
+    } else if (view === "landing") {
+      if (currentPath === "/admin" || currentHash === "#/admin" || currentHash === "#admin" || currentSearch.includes("page=admin") || currentSearch.includes("admin=true")) {
+        window.history.pushState({}, "", "/");
+      }
     }
   }, [view]);
 

@@ -79,7 +79,15 @@ function saveDb() {
 }
 
 // Supabase client initialization
-const SUPABASE_URL = process.env.SUPABASE_URL || "https://jxmjiiorrfpufyxjajik.supabase.co";
+let SUPABASE_URL = process.env.SUPABASE_URL || "https://jxmjiiorrfpufyxjajik.supabase.co";
+
+// Clean up any trailing slashes or /rest/v1 path suffix that might cause URL path duplication
+SUPABASE_URL = SUPABASE_URL.trim().replace(/\/+$/, "");
+if (SUPABASE_URL.endsWith("/rest/v1")) {
+  SUPABASE_URL = SUPABASE_URL.substring(0, SUPABASE_URL.length - 8);
+}
+SUPABASE_URL = SUPABASE_URL.replace(/\/+$/, "");
+
 // Using the provided service role key or anon key to authenticate securely from backend
 const SUPABASE_SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY || "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imp4bWppaW9ycmZwdWZ5eGphamlrIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc4MzQ0ODg5NywiZXhwIjoyMDk5MDI0ODk3fQ.-f-RieLu_yh1O1h6xETllOFkWP1m4opQjKekcEYw9DU";
 const SUPABASE_ANON_KEY = process.env.SUPABASE_ANON_KEY || "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imp4bWppaW9ycmZwdWZ5eGphamlrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODM0NDg4OTcsImV4cCI6MjA5OTAyNDg5N30.zfN_ULhPkn7TTCfv4bnzklo7BmApRK-UhbfqZvDQE30";
@@ -598,12 +606,74 @@ async function startServer() {
       }));
 
       // CTA Funnel breakdown
+      const watchVideoClicksCount = clickWatchVideoEvents.length;
+      const directCheckoutClicksCount = clicks?.filter(c => c.source === "direct_checkout_cta").length || 0;
+      const formSubmissionsCount = leads?.length || 0;
+      const modalCheckoutClicksCount = clicks?.filter(c => c.source === "landing_modal_checkout_cta").length || 0;
+
+      const ctaBreakdown = {
+        watchVideoClicks: watchVideoClicksCount,
+        directCheckoutClicks: directCheckoutClicksCount,
+        formSubmissions: formSubmissionsCount,
+        modalCheckoutClicks: modalCheckoutClicksCount
+      };
+
       const ctaPerf = {
         watchVideoClicks: clickWatchVideoEvents.length,
         videoPlays: playVideoEvents.length,
         joinMzClicks: joinMzClicks.length,
-        formSubmissions: leads?.length || 0
+        formSubmissions: leads?.length || 0,
+        direct_checkout_cta: directCheckoutClicksCount,
+        landing_modal_checkout_cta: modalCheckoutClicksCount
       };
+
+      // Clicks per day & today's clicks
+      const dailyClicksMap: Record<string, number> = {};
+      for (let i = 13; i >= 0; i--) {
+        const d = new Date(now.getTime() - i * 24 * 60 * 60 * 1000);
+        const dateStr = d.toISOString().split("T")[0];
+        dailyClicksMap[dateStr] = 0;
+      }
+
+      clicks?.forEach(c => {
+        try {
+          const dateStr = c.timestamp.split("T")[0];
+          if (dailyClicksMap[dateStr] !== undefined) {
+            dailyClicksMap[dateStr]++;
+          }
+        } catch (e) {}
+      });
+
+      clickWatchVideoEvents.forEach(e => {
+        try {
+          const dateStr = e.timestamp.split("T")[0];
+          if (dailyClicksMap[dateStr] !== undefined) {
+            dailyClicksMap[dateStr]++;
+          }
+        } catch (e) {}
+      });
+
+      const dailyClicks = Object.entries(dailyClicksMap)
+        .map(([date, count]) => ({ date, count }))
+        .sort((a, b) => a.date.localeCompare(b.date));
+
+      const todayStr = now.toISOString().split("T")[0];
+      const clicksToday = dailyClicksMap[todayStr] || 0;
+
+      // Unique users redirected to registration page (direct or via form validation)
+      const redirectedVisitorIds = new Set<string>();
+      leads?.forEach(l => {
+        if (l.visitor_id) redirectedVisitorIds.add(l.visitor_id);
+      });
+      clicks?.forEach(c => {
+        if ((c.source === "direct_checkout_cta" || c.source === "landing_modal_checkout_cta") && c.visitor_id) {
+          redirectedVisitorIds.add(c.visitor_id);
+        }
+      });
+      const redirectedUniqueCount = redirectedVisitorIds.size;
+      const registrationRedirectRate = uniqueVisitors > 0
+        ? Math.round((redirectedUniqueCount / uniqueVisitors) * 100)
+        : 0;
 
       return res.json({
         summary: {
@@ -621,7 +691,10 @@ async function startServer() {
           activeThisWeek,
           activeThisMonth,
           visitToPlayRate,
-          playToCtaRate
+          playToCtaRate,
+          clicksToday,
+          registrationRedirectRate,
+          redirectedUniqueCount
         },
         leads,
         recentVisits: visits?.slice(0, 50) || [],
@@ -631,6 +704,9 @@ async function startServer() {
         dailyLeads,
         weekdayStats,
         ctaPerf,
+        ctaBreakdown,
+        dailyClicks,
+        clicksToday,
         clicks: joinMzClicks,
         source: "supabase"
       });
@@ -638,6 +714,7 @@ async function startServer() {
     } catch (err: any) {
       console.warn("[Supabase fallback] Using local JSON database stats due to error:", err?.message || err);
 
+      const now = new Date();
       // JSON Database fallback aggregation
       db = initDb();
       
@@ -670,6 +747,67 @@ async function startServer() {
         .sort((a, b) => a.date.localeCompare(b.date))
         .slice(-14);
 
+      // 1. Clicks per day (fallback JSON)
+      const dailyClicksMap: Record<string, number> = {};
+      for (let i = 13; i >= 0; i--) {
+        const d = new Date(now.getTime() - i * 24 * 60 * 60 * 1000);
+        const dateStr = d.toISOString().split("T")[0];
+        dailyClicksMap[dateStr] = 0;
+      }
+
+      db.clicks.forEach((c: any) => {
+        try {
+          const dateStr = c.timestamp.split("T")[0];
+          if (dailyClicksMap[dateStr] !== undefined) {
+            dailyClicksMap[dateStr]++;
+          }
+        } catch (e) {}
+      });
+
+      (db.videoClicks || []).forEach((v: any) => {
+        try {
+          const dateStr = v.timestamp.split("T")[0];
+          if (dailyClicksMap[dateStr] !== undefined) {
+            dailyClicksMap[dateStr]++;
+          }
+        } catch (e) {}
+      });
+
+      const dailyClicks = Object.entries(dailyClicksMap)
+        .map(([date, count]) => ({ date, count }))
+        .sort((a, b) => a.date.localeCompare(b.date));
+
+      const todayStr = now.toISOString().split("T")[0];
+      const clicksToday = dailyClicksMap[todayStr] || 0;
+
+      // 2. Specific CTA Clicks breakdown (fallback JSON)
+      const watchVideoClicksCount = db.videoClicks?.length || 0;
+      const directCheckoutClicksCount = db.clicks.filter((c: any) => c.source === "direct_checkout_cta").length;
+      const formSubmissionsCount = db.leads.length;
+      const modalCheckoutClicksCount = db.clicks.filter((c: any) => c.source === "landing_modal_checkout_cta").length;
+
+      const ctaBreakdown = {
+        watchVideoClicks: watchVideoClicksCount,
+        directCheckoutClicks: directCheckoutClicksCount,
+        formSubmissions: formSubmissionsCount,
+        modalCheckoutClicks: modalCheckoutClicksCount
+      };
+
+      // 3. Unique users redirected to registration page (fallback JSON)
+      const redirectedVisitorIds = new Set<string>();
+      db.leads.forEach((l: any) => {
+        if (l.visitor_id) redirectedVisitorIds.add(l.visitor_id);
+      });
+      db.clicks.forEach((c: any) => {
+        if ((c.source === "direct_checkout_cta" || c.source === "landing_modal_checkout_cta") && c.visitor_id) {
+          redirectedVisitorIds.add(c.visitor_id);
+        }
+      });
+      const redirectedUniqueCount = redirectedVisitorIds.size;
+      const registrationRedirectRate = uniqueVisitors > 0
+        ? Math.round((redirectedUniqueCount / uniqueVisitors) * 100)
+        : 0;
+
       return res.json({
         summary: {
           totalVisits,
@@ -686,7 +824,10 @@ async function startServer() {
           activeThisWeek: uniqueVisitors,
           activeThisMonth: uniqueVisitors,
           visitToPlayRate: totalVisits > 0 ? Math.round((totalVideoClicks / totalVisits) * 100) : 0,
-          playToCtaRate: totalVideoClicks > 0 ? Math.round((totalClicks / totalVideoClicks) * 100) : 0
+          playToCtaRate: totalVideoClicks > 0 ? Math.round((totalClicks / totalVideoClicks) * 100) : 0,
+          clicksToday,
+          registrationRedirectRate,
+          redirectedUniqueCount
         },
         leads: db.leads.reverse(),
         recentVisits: db.visits.map(v => ({ visitor_id: v.id, timestamp: v.timestamp, ip: v.ip, path: v.path, referrer: v.referrer, country: "Inconnu", device_type: "desktop" })).reverse().slice(0, 20),
@@ -695,7 +836,17 @@ async function startServer() {
         deviceStats: [],
         dailyLeads,
         weekdayStats: [],
-        ctaPerf: { watchVideoClicks: totalVideoClicks, videoPlays: totalVideoClicks, joinMzClicks: totalClicks, formSubmissions: totalLeads },
+        ctaPerf: { 
+          watchVideoClicks: totalVideoClicks, 
+          videoPlays: totalVideoClicks, 
+          joinMzClicks: totalClicks, 
+          formSubmissions: totalLeads,
+          direct_checkout_cta: directCheckoutClicksCount,
+          landing_modal_checkout_cta: modalCheckoutClicksCount
+        },
+        ctaBreakdown,
+        dailyClicks,
+        clicksToday,
         clicks: db.clicks,
         source: "json"
       });
