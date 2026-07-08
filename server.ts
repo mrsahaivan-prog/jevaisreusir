@@ -989,13 +989,20 @@ async function startServer() {
   });
 
   // Serve static assets or mount Vite dev middleware
-  if (process.env.NODE_ENV !== "production") {
+  // Highly robust environment detection to prevent starting Vite dev server in production
+  const isProd = process.env.NODE_ENV === "production" || 
+                 __filename.endsWith("server.cjs") || 
+                 (!fs.existsSync(path.join(process.cwd(), "server.ts")) && fs.existsSync(path.join(process.cwd(), "dist/index.html")));
+
+  if (!isProd) {
+    console.log("[Server] Starting in DEVELOPMENT mode with Vite middleware...");
     const vite = await createViteServer({
       server: { middlewareMode: true },
       appType: "spa",
     });
     app.use(vite.middlewares);
   } else {
+    console.log("[Server] Starting in PRODUCTION mode, serving pre-built static files from /dist...");
     const distPath = path.join(process.cwd(), "dist");
     app.use(express.static(distPath));
     app.get("*", (req, res) => {
