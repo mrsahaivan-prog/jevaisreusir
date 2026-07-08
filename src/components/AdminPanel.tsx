@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from "react";
+import { apiClient } from "../lib/apiClient";
 import { 
   Lock, 
   Users, 
@@ -132,18 +133,7 @@ export default function AdminPanel({ onBackToHome }: AdminPanelProps) {
     setLoginError("");
 
     try {
-      const response = await fetch("/api/admin/login", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ username, password })
-      });
-
-      const data = await response.json();
-
-      if (!response.ok) {
-        throw new Error(data.error || "Échec de l'authentification.");
-      }
-
+      const data = await apiClient.adminLogin(username, password);
       localStorage.setItem("mz_admin_token", data.token);
       setToken(data.token);
     } catch (err: any) {
@@ -160,33 +150,22 @@ export default function AdminPanel({ onBackToHome }: AdminPanelProps) {
     setStats(null);
   };
 
-  // Fetch Stats from backend
+  // Fetch Stats from backend or direct Supabase
   const fetchStats = async () => {
     if (!token) return;
     setIsLoadingStats(true);
     setStatsError("");
 
     try {
-      const response = await fetch("/api/admin/stats", {
-        headers: {
-          "Authorization": `Bearer ${token}`
-        }
-      });
-
-      const data = await response.json();
-
-      if (!response.ok) {
-        if (response.status === 401) {
-          // Token expired or invalid
-          handleLogout();
-          throw new Error("Session expirée. Veuillez vous reconnecter.");
-        }
-        throw new Error(data.error || "Impossible de récupérer les statistiques.");
-      }
-
+      const data = await apiClient.fetchAdminStats(token);
       setStats(data);
     } catch (err: any) {
-      setStatsError(err.message || "Une erreur de chargement est survenue.");
+      if (err.message && (err.message.includes("401") || err.message.includes("expirée") || err.message.includes("token"))) {
+        handleLogout();
+        setStatsError("Session expirée. Veuillez vous reconnecter.");
+      } else {
+        setStatsError(err.message || "Une erreur de chargement est survenue.");
+      }
     } finally {
       setIsLoadingStats(false);
     }
@@ -198,16 +177,9 @@ export default function AdminPanel({ onBackToHome }: AdminPanelProps) {
     setIsDeletingId(leadId);
 
     try {
-      const response = await fetch(`/api/admin/leads/${leadId}`, {
-        method: "DELETE",
-        headers: {
-          "Authorization": `Bearer ${token}`
-        }
-      });
-
-      if (!response.ok) {
-        const data = await response.json();
-        throw new Error(data.error || "Erreur de suppression.");
+      const data = await apiClient.deleteLead(leadId, token);
+      if (data.error) {
+        throw new Error(data.error);
       }
 
       // Update local state directly to reflect deletion immediately

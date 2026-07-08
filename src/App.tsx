@@ -4,6 +4,7 @@
  */
 
 import React, { useState, useEffect, useRef } from "react";
+import { apiClient } from "./lib/apiClient";
 import { motion, AnimatePresence } from "motion/react";
 import { CustomVideoPlayer } from "./components/CustomVideoPlayer";
 import { SalesPage, getPriceForCountry } from "./components/SalesPage";
@@ -243,28 +244,20 @@ export default function App() {
     const deviceType = width < 768 ? "mobile" : width < 1024 ? "tablet" : "desktop";
 
     // Track initial page visit details
-    fetch("/api/visits", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        visitorId,
-        path: window.location.pathname,
-        referrer: document.referrer || "direct",
-        deviceType,
-        userAgent: navigator.userAgent,
-        country: "Inconnu",
-        countryCode: ""
-      })
+    apiClient.recordVisit({
+      visitorId,
+      path: window.location.pathname,
+      referrer: document.referrer || "direct",
+      deviceType,
+      userAgent: navigator.userAgent,
+      country: "Inconnu",
+      countryCode: ""
     }).catch((err) => console.error("Error tracking visit:", err));
 
     // Keep page session duration updated with 10-second heartbeats
     const interval = setInterval(() => {
       if (document.visibilityState === "visible") {
-        fetch("/api/visits/duration", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ visitorId, duration: 10 })
-        }).catch(() => {});
+        apiClient.recordDuration({ visitorId, duration: 10 }).catch(() => {});
       }
     }, 10000);
 
@@ -421,21 +414,13 @@ export default function App() {
     const visitorId = getOrCreateVisitorId();
     
     // Track video click in database using the unified events endpoint
-    fetch("/api/events", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        visitorId,
-        eventType: "click_watch_video",
-        eventValue: 1
-      })
+    apiClient.recordEvent({
+      visitorId,
+      eventType: "click_watch_video",
+      eventValue: 1
     }).catch((err) => console.error("Error tracking video event click:", err));
     
-    fetch("/api/video-clicks", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ source: "watch_video_cta" })
-    }).catch(() => {});
+    apiClient.recordVideoClick({ source: "watch_video_cta" }).catch(() => {});
     
     // Give a brief moment for layout/render updates, then scroll with high precision
     setTimeout(() => {
@@ -521,17 +506,13 @@ export default function App() {
       // Save to server-side database for admin panel stats
       try {
         const visitorId = getOrCreateVisitorId();
-        await fetch("/api/leads", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            name,
-            email,
-            phone,
-            country: selectedCountry.name,
-            countryCode: selectedCountry.flag,
-            visitorId
-          })
+        await apiClient.recordLead({
+          name,
+          email,
+          phone,
+          country: selectedCountry.name,
+          countryCode: selectedCountry.flag,
+          visitorId
         });
       } catch (err) {
         console.error("Failed to save lead in server database:", err);
@@ -562,29 +543,21 @@ export default function App() {
     const visitorId = getOrCreateVisitorId();
     
     // Log the click event to our database for admin analytics
-    fetch("/api/leads", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        name: "Redirection Directe",
-        email: "direct_checkout@chariow.shop",
-        phone: "Direct",
-        country: selectedCountry.name,
-        countryCode: selectedCountry.flag,
-        visitorId
-      })
+    apiClient.recordLead({
+      name: "Redirection Directe",
+      email: "direct_checkout@chariow.shop",
+      phone: "Direct",
+      country: selectedCountry.name,
+      countryCode: selectedCountry.flag,
+      visitorId
     }).catch((err) => console.error("Failed to log redirect click:", err));
 
     // Track checkout click event
-    fetch("/api/clicks", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        email: "direct_checkout@chariow.shop",
-        phone: "Direct",
-        source: "direct_checkout_cta",
-        visitorId
-      })
+    apiClient.recordClick({
+      email: "direct_checkout@chariow.shop",
+      phone: "Direct",
+      source: "direct_checkout_cta",
+      visitorId
     }).catch(() => {});
 
     try {
@@ -955,26 +928,18 @@ export default function App() {
                 }}
                 onPlay={() => {
                   const visitorId = getOrCreateVisitorId();
-                  fetch("/api/events", {
-                    method: "POST",
-                    headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify({
-                      visitorId,
-                      eventType: "play_video",
-                      eventValue: 1
-                    })
+                  apiClient.recordEvent({
+                    visitorId,
+                    eventType: "play_video",
+                    eventValue: 1
                   }).catch(() => {});
                 }}
                 onProgress={(percent) => {
                   const visitorId = getOrCreateVisitorId();
-                  fetch("/api/events", {
-                    method: "POST",
-                    headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify({
-                      visitorId,
-                      eventType: "video_progress",
-                      eventValue: percent
-                    })
+                  apiClient.recordEvent({
+                    visitorId,
+                    eventType: "video_progress",
+                    eventValue: percent
                   }).catch(() => {});
                 }}
               />
@@ -1728,14 +1693,11 @@ export default function App() {
                       rel="noreferrer"
                       onClick={async () => {
                         try {
-                          await fetch("/api/clicks", {
-                            method: "POST",
-                            headers: { "Content-Type": "application/json" },
-                            body: JSON.stringify({
-                              email: email,
-                              phone: phone,
-                              source: "landing_modal_checkout_cta"
-                            })
+                          await apiClient.recordClick({
+                            email: email,
+                            phone: phone,
+                            source: "landing_modal_checkout_cta",
+                            visitorId: getOrCreateVisitorId()
                           });
                         } catch (err) {
                           console.error("Failed to track modal checkout click:", err);
